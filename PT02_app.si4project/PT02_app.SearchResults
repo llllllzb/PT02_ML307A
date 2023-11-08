@@ -1,0 +1,3 @@
+---- bleRecvParser Matches (2 in 1 files) ----
+app_peripheral.c (PT02_ML307A_app\APP) line 188 : void bleRecvParser(char *data, uint16_t len)
+appWriteAttrCB in app_peripheral.c (PT02_ML307A_app\APP) :                 bleRecvParser(pValue, len);
