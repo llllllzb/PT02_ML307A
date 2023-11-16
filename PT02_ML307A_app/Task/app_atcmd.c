@@ -12,7 +12,7 @@
 #include "app_socket.h"
 #include "app_server.h"
 #include "aes.h"
-#include "app_bleRelay.h"
+
 #include "app_jt808.h"
 #include "app_task.h"
 #include "app_central.h"
@@ -164,11 +164,9 @@ static void doAtdebugCmd(uint8_t *buf, uint16_t len)
     }
     else
     {
-        if (item.item_data[0][0] >= '0' && item.item_data[0][0] <= '9')
-        {
-            sysinfo.logLevel = item.item_data[0][0] - '0';
-            LogPrintf(DEBUG_NONE, "Debug LEVEL:%d OK", sysinfo.logLevel);
-        }
+        sysinfo.logLevel = atoi(item.item_data[0]);
+        LogPrintf(DEBUG_NONE, "Debug LEVEL:%d OK", sysinfo.logLevel);
+        
     }
 }
 /**************************************************

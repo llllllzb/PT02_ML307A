@@ -14,6 +14,7 @@
 #include "app_peripheral.h"
 #include "app_db.h"
 #include "app_jt808.h"
+#include "app_central.h"
 
 static uint8_t instructionid[4];
 static uint8_t bleinstructionid[4];
@@ -374,9 +375,7 @@ static void sendTcpDataDebugShow(uint8_t link, char *txdata, int txlen)
     srclen = tmos_strlen(senddata);
     byteToHexString((uint8_t *)txdata, (uint8_t *)senddata + srclen, (uint16_t) debuglen);
     senddata[srclen + debuglen * 2] = 0;
-    LogMessage(DEBUG_ALL, senddata);
-
-
+    LogMessage(DEBUG_BLE, senddata);
 }
 
 
@@ -1013,7 +1012,7 @@ void protocolSend(uint8_t link, PROTOCOLTYPE protocol, void *param)
 
     if (sysparam.protocol != ZT_PROTOCOL_TYPE)
     {
-        if (link == NORMAL_LINK || link == BLE_LINK)
+        if (link == NORMAL_LINK)
         {
             return;
         }
@@ -1163,9 +1162,10 @@ static void protoclparase13(uint8_t link, char *protocol, int size)
 static void protoclparase80(uint8_t link, char *protocol, int size)
 {
     insParam_s insparam;
+    deviceConnInfo_s *devinfo;
     uint8_t *instruction;
     uint8_t instructionlen;
-    char encrypt[256];
+    char encrypt[256] = { 0 };
     unsigned char encryptLen;
     instructionid[0] = protocol[5];
     instructionid[1] = protocol[6];
@@ -1182,13 +1182,25 @@ static void protoclparase80(uint8_t link, char *protocol, int size)
     }
     else if (link == BLE1_LINK)
     {
-        getBle1Insid();
-        appSendNotifyData(instruction, instructionlen); 
+        /* 直接把指令内容发给pt13 */
+        devinfo = bleDevGetInfoBySockid(BLE1_LINK);
+        if (devinfo != NULL)
+        {
+			getBle1Insid();
+        	bleCentralSend(devinfo->connHandle, devinfo->charHandle,instruction, instructionlen);
+        }
+		LogPrintf(DEBUG_ALL, "protoclparase80==>link:%d conhandle:%d", link, devinfo->connHandle);
+
     }
     else if (link == BLE2_LINK)
     {
-		getBle2Insid();
-        appSendNotifyData(instruction, instructionlen); 
+    	devinfo = bleDevGetInfoBySockid(BLE2_LINK);
+    	if (devinfo != NULL)
+    	{
+			getBle2Insid();
+	        bleCentralSend(devinfo->connHandle, devinfo->charHandle, instruction, instructionlen);
+        }
+        LogPrintf(DEBUG_ALL, "protoclparase80==>link:%d conhandle:%d", link, devinfo->connHandle);
     }
     
 }
@@ -1377,7 +1389,7 @@ void protocolSnRegister(char *sn)
 {
     strncpy(protocolInfo.IMEI, sn, 15);
     protocolInfo.IMEI[15] = 0;
-    LogPrintf(DEBUG_ALL, "Register SN:%s", protocolInfo.IMEI);
+    LogPrintf(DEBUG_BLE, "Register SN:%s", protocolInfo.IMEI);
 }
 
 /**************************************************

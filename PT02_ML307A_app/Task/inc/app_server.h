@@ -50,7 +50,6 @@ typedef struct
     uint8_t batlevel;
     float vol;
     uint16_t step;
-    
 }bleSocketInfo_s;
 
 
@@ -91,19 +90,15 @@ void jt808ServerAuthSuccess(void);
 
 
 
-
+int8_t blePetSearchServerSn(char *Sn);
+int8_t blePetSearchIdleServer(void);
 int8_t blePetServerAdd(char *Sn);
+int8_t blePetServerDel(char *Sn);
 int8_t blePetServerUploadUpdate(devSocketData_s *data);
 bleSocketInfo_s *getBlepetServerInfo(void);
 void blePetServerLoginSuccess(uint8_t index);
 
 
-
-void bleServerReconnect(void);
-void bleJt808ServerAuthSuccess(void);
-void bleServerAddInfo(bleInfo_s dev);
-void showBleList(void);
-void bleSerLoginReady(void);
 
 void agpsRequestSet(void);
 void agpsRequestClear(void);

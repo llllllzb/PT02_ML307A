@@ -74,16 +74,10 @@ typedef struct
     uint8_t jt808Server[50];
     uint8_t bleServer[50];
 
-    uint8_t bleAutoDisc;
-    uint8_t bleRfThreshold;
-    uint8_t blePreShieldVoltage;
-    uint8_t blePreShieldDetCnt;
-    uint8_t blePreShieldHoldTime;
-    uint8_t relayCtl;
 
 
     uint8_t bleConnMac[2][6];
-    uint8_t relaySpeed;
+
     uint8_t bf;
     int8_t utc;
 
@@ -104,12 +98,8 @@ typedef struct
     float accOffVoltage;
     float protectVoltage;
 
-	
 
 	uint8_t cm;
-	uint8_t sosNum[3][20];
-	uint8_t centerNum[20];
-	uint8_t sosalm;
 
     uint8_t gsdettime;
     uint8_t gsValidCnt;
@@ -118,10 +108,6 @@ typedef struct
     uint8_t bleen;
     uint8_t agpsen;
     uint8_t cm2;
-
-    uint8_t bleRelay;
-    float bleVoltage;
-    uint8_t relayFun;
     
     float batLowLevel;
     float batHighLevel;

@@ -11,8 +11,11 @@
 #define DEBUG_NET				2
 #define DEBUG_GPS				3
 #define DEBUG_FACTORY			4
-#define DEBUG_BLE				5
+#define DEBUG_DETAIL			5
+#define DEBUG_BLE				6
 #define DEBUG_ALL				9
+
+#define DEBUG_MORE				20	//过滤一些多余的数据
 
 #define MODE1									1
 #define MODE2									2
@@ -29,7 +32,6 @@
 #define ACCDETMODE3         3       //acc线优先，其次电压+gsensor
 
 #define NORMAL_LINK				0
-#define BLE_LINK				1
 #define BLE1_LINK				1
 #define JT808_LINK				2
 #define HIDDEN_LINK				3

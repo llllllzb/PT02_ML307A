@@ -59,7 +59,7 @@ int8_t socketAdd(uint8_t sock, char *server, uint16_t port, void(*recvCb)(char *
     socketList[sock].port = port;
     socketList[sock].recvCallBack = recvCb;
     socketList[sock].usedFlag = 1;
-    LogPrintf(DEBUG_ALL, "Add socket[%d]", socketList[sock].socketId);
+    LogPrintf(DEBUG_BLE, "Add socket[%d]", socketList[sock].socketId);
     return 1;
 }
 
@@ -79,7 +79,7 @@ void socketDel(uint8_t sock)
     if (socketList[sock].usedFlag)
     {
         socketList[sock].usedFlag = 0;
-        LogPrintf(DEBUG_ALL, "Delete socket[%d]", socketList[sock].socketId);
+        LogPrintf(DEBUG_BLE, "Delete socket[%d]", socketList[sock].socketId);
         closeSocket(socketList[sock].socketId);
 		tmos_memset(&socketList[sock],0,sizeof(SocketInfo_s));
     }

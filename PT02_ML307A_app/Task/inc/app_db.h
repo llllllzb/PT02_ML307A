@@ -27,7 +27,7 @@
 #define DBINFO_SIZE			0x100
 
 #define DB_FLAG				0xAB
-#define GPS_DB_SIZE			500
+#define GPS_DB_SIZE			512
 
 #define BLOCK_SIZE		256
 

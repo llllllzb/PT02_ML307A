@@ -1,3 +1,8 @@
----- bleRecvParser Matches (2 in 1 files) ----
-app_peripheral.c (PT02_ML307A_app\APP) line 188 : void bleRecvParser(char *data, uint16_t len)
-appWriteAttrCB in app_peripheral.c (PT02_ML307A_app\APP) :                 bleRecvParser(pValue, len);
+---- socketAdd Matches (7 in 3 files) ----
+privateServerConnTask in app_server.c (PT02_ML307A_app\Task) :         socketAdd(NORMAL_LINK, sysparam.Server, sysparam.ServerPort, privateServerSocketRecv);
+hiddenServerConnTask in app_server.c (PT02_ML307A_app\Task) :         socketAdd(HIDDEN_LINK, sysparam.hiddenServer, sysparam.hiddenPort, hiddenServerSocketRecv);
+jt808ServerConnTask in app_server.c (PT02_ML307A_app\Task) :         socketAdd(JT808_LINK, sysparam.jt808Server, sysparam.jt808Port, jt808ServerSocketRecv);
+blePetServerConnTask in app_server.c (PT02_ML307A_app\Task) : 			socketAdd(BleSockId(i), sysparam.bleServer, sysparam.bleServerPort, BlePetSocketRecv(i));
+agpsServerConnTask in app_server.c (PT02_ML307A_app\Task) :         ret = socketAdd(AGPS_LINK, sysparam.agpsServer, sysparam.agpsPort, agpsSocketRecv);
+app_socket.c (PT02_ML307A_app\Task) line 37 : int8_t socketAdd(uint8_t sock, char *server, uint16_t port, void(*recvCb)(char *, uint16))
+app_socket.h (PT02_ML307A_app\Task\inc) line 48 : int8_t socketAdd(uint8_t sock, char *server, uint16_t port, void(*recvCb)(char *, uint16));

@@ -2,7 +2,7 @@
 #include "app_instructioncmd.h"
 
 #include "app_peripheral.h"
-#include "app_bleRelay.h"
+
 #include "app_gps.h"
 #include "app_kernal.h"
 #include "app_net.h"
@@ -275,7 +275,7 @@ static void serverChangeCallBack(void)
 {
     jt808ServerReconnect();
     privateServerReconnect();
-	bleServerReconnect();
+
 }
 
 static void doServerInstruction(ITEM *item, char *message)
@@ -1252,44 +1252,13 @@ static void doSetBleMacInstruction(ITEM *item, char *message)
 
 static void doRelaySpeedInstruction(ITEM *item, char *message)
 {
-    if (item->item_data[1][0] == 0 || item->item_data[1][0] == '?')
-    {
-        sprintf(message, "Current relaySpeed %d km/h", sysparam.relaySpeed);
-    }
-    else
-    {
-        sysparam.relaySpeed = atoi(item->item_data[1]);
-        paramSaveAll();
-        sprintf(message, "Update relaySpeed %d km/h", sysparam.relaySpeed);
-    }
+
 }
 
 
 static void doRelayForceInstrucion(ITEM *item, char *message)
 {
-//    if (item->item_data[1][0] == '1')
-//    {
-//        sysparam.relayCtl = 1;
-//        paramSaveAll();
-//        relayAutoClear();
-//        bleRelaySetAllReq(BLE_EVENT_SET_DEVON);
-//        bleRelayClearAllReq(BLE_EVENT_SET_DEVOFF);
-//
-//        strcpy(message, "Relay force on");
-//    }
-//    else if (item->item_data[1][0] == '0')
-//    {
-//        sysparam.relayCtl = 0;
-//        paramSaveAll();
-//        relayAutoClear();
-//        bleRelaySetAllReq(BLE_EVENT_SET_DEVOFF | BLE_EVENT_CLR_CNT);
-//        bleRelayClearAllReq(BLE_EVENT_SET_DEVON);
-//        strcpy(message, "Relay force off");
-//    }
-//    else
-//    {
-//        sprintf(message, "Relay status was %s", sysparam.relayCtl == 1 ? "relay on" : "relay off");
-//    }
+
 }
 
 void doBFInstruction(ITEM *item, char *message)
@@ -1363,185 +1332,17 @@ void doTimerInstrucion(ITEM *item, char *message)
 
 void doSOSInstruction(ITEM *item, char *messages, insMode_e mode, void *param)
 {
-    uint8_t i, j, k;
-    insParam_s *insparam;
 
-    if (item->item_data[1][0] == 0 || item->item_data[1][0] == '?')
-    {
-        strcpy(messages, "Query sos number:");
-        for (i = 0; i < 3; i++)
-        {
-            sprintf(messages + strlen(messages), " %s", sysparam.sosNum[i][0] == 0 ? "NULL" : (char *)sysparam.sosNum[i]);
-        }
-    }
-    else
-    {
-
-        if (mode == SMS_MODE && param != NULL)
-        {
-            insparam = (insParam_s *)param;
-            if (my_strstr(insparam->telNum, (char *)sysparam.centerNum, strlen(insparam->telNum)) == 0)
-            {
-                strcpy(messages, "Operation failure,please use center number!");
-                return ;
-            }
-        }
-        if (item->item_data[1][0] == 'A' || item->item_data[1][0] == 'a')
-        {
-            for (i = 0; i < 3; i++)
-            {
-                for (j = 0; j < 19; j++)
-                {
-                    sysparam.sosNum[i][j] = item->item_data[2 + i][j];
-                }
-                sysparam.sosNum[i][19] = 0;
-            }
-            strcpy(messages, "Add sos number:");
-            for (i = 0; i < 3; i++)
-            {
-                sprintf(messages + strlen(messages), " %s", sysparam.sosNum[i][0] == 0 ? "NULL" : (char *)sysparam.sosNum[i]);
-            }
-        }
-        else if (item->item_data[1][0] == 'D' || item->item_data[1][0] == 'd')
-        {
-            j = strlen(item->item_data[2]);
-            if (j < 20 && j > 0)
-            {
-                k = 0;
-                for (i = 0; i < 3; i++)
-                {
-                    if (my_strpach((char *)sysparam.sosNum[i], item->item_data[2]))
-                    {
-                        sprintf(messages + strlen(messages), "Delete %s OK;", (char *)sysparam.sosNum[i]);
-                        sysparam.sosNum[i][0] = 0;
-                        k = 1;
-                    }
-                }
-                if (k == 0)
-                {
-                    sprintf(messages, "Delete %s Fail,no this number", item->item_data[2]);
-                }
-            }
-            else
-            {
-                strcpy(messages, "Invalid sos number");
-            }
-        }
-        else
-        {
-            strcpy(messages, "Invalid option");
-        }
-        paramSaveAll();
-    }
 }
 
 void doCenterInstruction(ITEM *item, char *messages, insMode_e mode, void *param)
 {
-    uint8_t j, k;
-    insParam_s *insparam;
-    if (item->item_data[1][0] == 0 || item->item_data[1][0] == '?')
-    {
-        strcpy(messages, "Query center number:");
-        sprintf(messages + strlen(messages), " %s", sysparam.centerNum[0] == 0 ? "NULL" : (char *)sysparam.centerNum);
-    }
-    else
-    {
-        if (mode == SMS_MODE && param != NULL)
-        {
-            insparam = (insParam_s *)param;
-            if (my_strstr(insparam->telNum, (char *)sysparam.centerNum, strlen(insparam->telNum)) == 0)
-            {
-                strcpy(messages, "Operation failure,please use center number!");
-                return;
-            }
-        }
-        if (item->item_data[1][0] == 'A' || item->item_data[1][0] == 'a')
-        {
-            for (j = 0; j < 19; j++)
-            {
-                sysparam.centerNum[j] = item->item_data[2][j];
-            }
-            sysparam.centerNum[19] = 0;
-            strcpy(messages, "Add center number:");
-            sprintf(messages + strlen(messages), " %s", sysparam.centerNum[0] == 0 ? "NULL" : (char *)sysparam.centerNum);
-        }
-        else if (item->item_data[1][0] == 'D' || item->item_data[1][0] == 'd')
-        {
-            j = strlen(item->item_data[2]);
-            if (j < 20 && j > 0)
-            {
-                k = 0;
-                if (my_strpach((char *)sysparam.centerNum, item->item_data[2]))
-                {
-                    sprintf(messages + strlen(messages), "Delete %s OK;", (char *)sysparam.centerNum);
-                    sysparam.centerNum[0] = 0;
-                    k = 1;
-                }
-                if (k == 0)
-                {
-                    sprintf(messages, "Delete %s Fail,no this number", item->item_data[2]);
-                }
-            }
-            else
-            {
-                strcpy(messages, "Invalid center number");
-            }
-        }
-        else
-        {
-            strcpy(messages, "Invalid option");
-        }
-        paramSaveAll();
-    }
+
 }
 
 void doSosAlmInstruction(ITEM *item, char *message)
 {
-    if (item->item_data[1][0] == 0 || item->item_data[1][0] == '?')
-    {
-        switch (sysparam.sosalm)
-        {
-            case ALARM_TYPE_NONE:
-                sprintf(message, "Query:%s", "SOS alarm was closed");
-                break;
-            case ALARM_TYPE_GPRS:
-                sprintf(message, "Query:the device will %s when sos occur", "only send gprs");
-                break;
-            case ALARM_TYPE_GPRS_SMS:
-                sprintf(message, "Query:the device will %s when sos occur", "send gprs and sms");
-                break;
-            case ALARM_TYPE_GPRS_SMS_TEL:
-                sprintf(message, "Query:the device will %s when sos occur", "send gprs,sms and call sos number");
-                break;
-            default:
-                strcpy(message, "Unknow");
-                break;
-        }
-    }
-    else
-    {
-        sysparam.sosalm = atoi(item->item_data[1]);
-        switch (sysparam.sosalm)
-        {
-            case ALARM_TYPE_NONE:
-                strcpy(message, "Close sos function");
-                break;
-            case ALARM_TYPE_GPRS:
-                sprintf(message, "The device will %s when sos occur", "only send gprs");
-                break;
-            case ALARM_TYPE_GPRS_SMS:
-                sprintf(message, "The device will %s when sos occur", "send gprs and sms");
-                break;
-            case ALARM_TYPE_GPRS_SMS_TEL:
-                sprintf(message, "The device will %s when sos occur", "send gprs,sms and call sos number");
-                break;
-            default:
-                sprintf(message, "%s", "Unknow status,change to send gprs by default");
-                sysparam.sosalm = ALARM_TYPE_GPRS;
-                break;
-        }
-        paramSaveAll();
-    }
+
 }
 
 static void doQgmrInstruction(ITEM *item, char *message)
@@ -1654,30 +1455,13 @@ static void doAgpsenInstrution(ITEM *item, char *message)
 
 static void doBleRelayCtlInstruction(ITEM *item, char *message)
 {
-	if (item->item_data[1][0] == 0 || item->item_data[1][0] == '?')
-    {
-        sprintf(message, "BleRelayCtrl param is %d,%.2f", sysparam.bleRelay, sysparam.bleVoltage);
-        return ;
-    }
-    sysparam.bleRelay = atoi(item->item_data[1]);
-    sysparam.bleVoltage = atof(item->item_data[2]);
-    paramSaveAll();
-    sprintf(message, "set success ,%d,%.2f", sysparam.bleRelay, sysparam.bleVoltage);
+
 	
 }
 
 static void doRelayFunInstruction(ITEM *item, char *message)
 {
-    if (item->item_data[1][0] == 0 || item->item_data[1][0] == '?')
-    {
-        sprintf(message, "Current relayfun %d", sysparam.relayFun);
-    }
-    else
-    {
-        sysparam.relayFun = atoi(item->item_data[1]);
-        paramSaveAll();
-        sprintf(message, "Update relayfun %d", sysparam.relayFun);
-    }
+
 }
 
 static void doSetBatRateInstruction(ITEM *item, char *message)

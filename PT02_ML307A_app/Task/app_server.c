@@ -17,10 +17,9 @@
 #include "app_task.h"
 #include "app_central.h"
 
-static netConnectInfo_s privateServConn, bleServConn, hiddenServConn;
-static bleSocketInfo_s	ble1ServConn, ble2ServConn, blePetServConn[DEVICE_MAX_CONNECT_COUNT];
-static jt808_Connect_s jt808ServConn, bleJt808SerConn;
-static bleInfo_s *bleHead = NULL;
+static netConnectInfo_s privateServConn, hiddenServConn;
+static bleSocketInfo_s blePetServConn[DEVICE_MAX_CONNECT_COUNT];
+static jt808_Connect_s jt808ServConn;
 static int8_t timeOutId = -1;
 static int8_t hbtTimeOutId = -1;
 
@@ -770,479 +769,33 @@ void jt808ServerConnTask(void)
     jt808ServConn.runTick++;
 }
 
-/**************************************************
-@bref		添加待登录的从设备信息
-@param
-@return
-@note
-	SN:999913436051195,292,3.77,46
-**************************************************/
 
-void bleServerAddInfo(bleInfo_s dev)
-{
-    bleInfo_s *next;
-    if (bleHead == NULL)
-    {
-        bleHead = malloc(sizeof(bleInfo_s));
-        if (bleHead != NULL)
-        {
-            strncpy(bleHead->imei, dev.imei, 15);
-            bleHead->imei[15] = 0;
-            bleHead->startCnt = dev.startCnt;
-            bleHead->vol = dev.vol;
-            bleHead->batLevel = dev.batLevel;
-            bleHead->next = NULL;
-        }
-        return;
-    }
-    next = bleHead;
-    while (next != NULL)
-    {
-        if (next->next == NULL)
-        {
-            next->next = malloc(sizeof(bleInfo_s));
-            if (next->next != NULL)
-            {
-                next = next->next;
-
-                strncpy(next->imei, dev.imei, 15);
-                next->imei[15] = 0;
-                next->startCnt = dev.startCnt;
-                next->vol = dev.vol;
-                next->batLevel = dev.batLevel;
-                next->next = NULL;
-                next = next->next;
-            }
-            else
-            {
-                break;
-            }
-        }
-        else
-        {
-            next = next->next;
-        }
-    }
-}
-/**************************************************
-@bref		显示待连接队列
-@param
-@return
-@note
-**************************************************/
-
-void showBleList(void)
-{
-    uint8_t cnt;
-    bleInfo_s *dev;
-    dev = bleHead;
-    cnt = 0;
-    while (dev != NULL)
-    {
-        LogPrintf(DEBUG_ALL, "Dev[%d]:%s", ++cnt, dev->imei);
-        dev = dev->next;
-    }
-}
-
-/**************************************************
-@bref		蓝牙待连接链路登录成
-@param
-@return
-@note
-**************************************************/
-
-void bleSerLoginReady(void)
-{
-    bleServConn.fsmstate = SERV_READY;
-    bleServConn.heartbeattick = 0;
-}
-/**************************************************
-@bref		socket数据接收
-@param
-@return
-@note
-**************************************************/
-
-static void bleServerSocketRecv(char *data, uint16_t len)
-{
-    uint16_t i, beginindex, contentlen, lastindex;
-    //遍历，寻找协议头
-    for (i = 0; i < len; i++)
-    {
-        beginindex = i;
-        if (data[i] == 0x78)
-        {
-            if (i + 1 >= len)
-            {
-                continue ;
-            }
-            if (data[i + 1] != 0x78)
-            {
-                continue ;
-            }
-            if (i + 2 >= len)
-            {
-                continue ;
-            }
-            contentlen = data[i + 2];
-            if ((i + 5 + contentlen) > len)
-            {
-                continue ;
-            }
-            if (data[i + 3 + contentlen] == 0x0D && data[i + 4 + contentlen] == 0x0A)
-            {
-                i += (4 + contentlen);
-                lastindex = i + 1;
-                //LogPrintf(DEBUG_ALL, "Fint it ====>Begin:7878[%d,%d]", beginindex, lastindex - beginindex);
-                protocolRxParser(BLE_LINK, (char *)data + beginindex, lastindex - beginindex);
-            }
-        }
-        else if (data[i] == 0x79)
-        {
-            if (i + 1 >= len)
-            {
-                continue ;
-            }
-            if (data[i + 1] != 0x79)
-            {
-                continue ;
-            }
-            if (i + 3 >= len)
-            {
-                continue ;
-            }
-            contentlen = data[i + 2] << 8 | data[i + 3];
-            if ((i + 6 + contentlen) > len)
-            {
-                continue ;
-            }
-            if (data[i + 4 + contentlen] == 0x0D && data[i + 5 + contentlen] == 0x0A)
-            {
-                i += (5 + contentlen);
-                lastindex = i + 1;
-                //LogPrintf(DEBUG_ALL, "Fint it ====>Begin:7979[%d,%d]", beginindex, lastindex - beginindex);
-                protocolRxParser(BLE_LINK, (char *)data + beginindex, lastindex - beginindex);
-            }
-        }
-    }
-}
-
-/**************************************************
-@bref		ble联网复位
-@param
-@return
-@note
-**************************************************/
-
-void bleServerReconnect(void)
-{
-	LogMessage(DEBUG_ALL, "ble reconnect server");
-    socketDel(BLE_LINK);
-    moduleSleepCtl(0);
-}
-
-/**************************************************
-@bref		蓝牙链接服务器任务
-@param
-@return
-@note
-**************************************************/
-
-void bleServerConnTask(void)
-{
-    static uint8_t tick = 0;
-    bleInfo_s *next;
-    gpsinfo_s *gpsinfo;
-    if (isModuleRunNormal() == 0 || bleHead == NULL)
-    {
-        if (gpsRequestGet(GPS_REQUEST_BLE))
-        {
-            gpsRequestClear(GPS_REQUEST_BLE);
-        }
-        return ;
-    }
-    if (socketGetUsedFlag(BLE_LINK) != 1)
-    {
-        bleServConn.loginCount = 0;
-        bleServConn.fsmstate = SERV_LOGIN;
-        socketAdd(BLE_LINK, sysparam.bleServer, sysparam.bleServerPort, bleServerSocketRecv);
-        return;
-    }
-    if (socketGetConnStatus(BLE_LINK) != SOCKET_CONN_SUCCESS)
-    {
-    	bleServConn.fsmstate = SERV_LOGIN;
-        return;
-    }
-
-    switch (bleServConn.fsmstate)
-    {
-        case SERV_LOGIN:
-            tick = 0;
-            LogMessage(DEBUG_ALL, "ble try login...");
-            gpsRequestSet(GPS_REQUEST_BLE);
-            protocolSnRegister(bleHead->imei);
-            protocolSend(BLE_LINK, PROTOCOL_01, NULL);
-            bleServConn.fsmstate = SERV_LOGIN_WAIT;
-            bleServConn.logintick = 0;
-            break;
-        case SERV_LOGIN_WAIT:
-            bleServConn.logintick++;
-            if (bleServConn.logintick >= 30)
-            {
-                bleServConn.fsmstate = SERV_LOGIN;
-                bleServConn.loginCount++;
-                if (bleServConn.loginCount >= 2)
-                {
-                    bleServConn.fsmstate = SERV_END;
-                }
-            }
-            break;
-        case SERV_READY:
-            if (bleServConn.heartbeattick++ == 0)
-            {
-                protocolInfoResiter(bleHead->batLevel, sysinfo.outsidevoltage > 5.0 ? sysinfo.outsidevoltage : sysinfo.insidevoltage, bleHead->startCnt, 0);
-                protocolSend(BLE_LINK, PROTOCOL_13, NULL);
-                lbsRequestSet(DEV_EXTEND_OF_BLE);
-                
-            }
-            gpsinfo = getCurrentGPSInfo();
-
-            if (gpsinfo->fixstatus)
-            {
-                if (tick++ >= 10)
-                {
-                    protocolSend(BLE_LINK, PROTOCOL_12, gpsinfo);
-                    bleServConn.fsmstate = SERV_END;
-                    break;
-                }
-            }
-            else
-            {
-                tick = 0;
-                if (bleServConn.heartbeattick == 30)
-                {
-					wifiRequestSet(DEV_EXTEND_OF_BLE);
-                }
-            }
-            if (bleServConn.heartbeattick >= 180)
-            {
-                protocolSend(BLE_LINK, PROTOCOL_12, getLastFixedGPSInfo());
-                bleServConn.fsmstate = SERV_END;
-            }
-            break;
-        case SERV_END:
-            next = bleHead->next;
-            free(bleHead);
-            bleHead = next;
-            socketDel(BLE_LINK);
-            bleServConn.fsmstate = SERV_LOGIN;
-            LogPrintf(DEBUG_ALL, "ble server done");
-            break;
-        default:
-            bleServConn.fsmstate = SERV_LOGIN;
-            bleServConn.heartbeattick = 0;
-            break;
-    }
-}
-
-/**************************************************
-@bref		jt808数据接收回调
-@param
-	none
-@return
-	none
-@note
-**************************************************/
-
-static void bleJt808ServerSocketRecv(char *rxbuf, uint16_t len)
-{
-    jt808ReceiveParser(BLE_LINK, (uint8_t *)rxbuf, len);
-}
+/**
+ * 蓝牙-4G总体连接逻辑
+ * 蓝牙先扫描，把扫到的PT13（最多2个）加入到连接列表，连接列表满了，停止扫描工作（要考虑链接的过程中一直在扫描会不会影响蓝牙链接的稳定性）
+ * 蓝牙链接列表有目标设备之后，就去连接，连接成功便获取数据，中间断连会一直重连，直到3分钟后仍无法获取数据，就将该设备移出连接列表并重新扫描
+ * 蓝牙获取数据成功后加入链路管理。中间sock链路断开一直重连就好，除非蓝牙连接列表把该设备删除
+ * 
+ */
 
 
 /**************************************************
-@bref		blejt808状态机切换状态
-@param
-	nfsm	新状态
-@return
-	none
-@note
-**************************************************/
-
-static void bleJt808ServerChangeFsm(jt808_connfsm_s nfsm)
-{
-    bleJt808SerConn.connectFsm = nfsm;
-    bleJt808SerConn.runTick = 0;
-}
-
-/**************************************************
-@bref       blejt808鉴权成功回复
+@bref		根据数组指针获取链路ID
 @param
 @return
 @note
+	链路与数组编号绑定，数组0为链路1，数组1为链路5
 **************************************************/
-
-void bleJt808ServerAuthSuccess(void)
-{
-    bleJt808SerConn.authCnt = 0;
-    bleJt808SerConn.hbtTick = 0;
-    bleJt808ServerChangeFsm(JT808_NORMAL);
-}
-
-
-/**************************************************
-@bref		蓝牙链接808服务器任务
-@param
-@return
-@note
-**************************************************/
-void bleJt808ServerConnTask(void)
-{
-	static uint16_t unConnTick = 0;
-	static uint8_t tick = 0;
-	gpsinfo_s *gpsinfo;
-	bleInfo_s *next;
-    if (isModuleRunNormal() == 0 || bleHead == NULL)
-    {
-        if (gpsRequestGet(GPS_REQUEST_BLE))
-        {
-            gpsRequestClear(GPS_REQUEST_BLE);
-        }
-        return ;
-    }
-    if (socketGetUsedFlag(BLE_LINK) != 1)
-    {
-    	bleJt808InfoInit();
-    	unConnTick = 0;
-    	tick = 0;
-    	bleJt808ServerChangeFsm(JT808_REGISTER);
-        jt808RegisterTcpSend(BLE_LINK, jt808ServerSocketSend);
-        jt808RegisterManufactureId(BLE_LINK, (uint8_t *)"ZT");
-        jt808RegisterTerminalType(BLE_LINK, (uint8_t *)"02");
-        jt808RegisterTerminalId(BLE_LINK, (uint8_t *)"01");
-       
-        socketAdd(BLE_LINK, sysparam.jt808Server, sysparam.jt808Port, bleJt808ServerSocketRecv);
-        return;
-    }
-    if (socketGetConnStatus(BLE_LINK) != SOCKET_CONN_SUCCESS)
-    {
-		bleJt808ServerChangeFsm(JT808_REGISTER);
-		if (unConnTick++ >= 900)
-		{
-			/*清除bleHead*/
-		}
-		return;
-    }
-    switch (bleJt808SerConn.connectFsm)
-    {
-    	//每次都注册
-		case JT808_REGISTER:
-			if (bleJt808RegisterGet())
-			{
-				bleJt808ServerChangeFsm(JT808_AUTHENTICATION);
-				bleJt808SerConn.regCnt = 0;
-			}
-			else
-			{
-				if (bleJt808SerConn.runTick % 60 == 0)
-				{
-					if (bleJt808SerConn.regCnt++ > 3)
-					{
-						LogMessage(DEBUG_ALL, "Ble terminal register timeout");
-						bleJt808SerConn.regCnt = 0;
-						bleServerReconnect();
-					}
-					else
-					{
-						LogMessage(DEBUG_ALL, "Ble terminal register");
-						jt808RegisterLoginInfo(BLE_LINK, bleHead->imei, 0, NULL, 0);
-						jt808RegisterBleInfo(BLE_LINK, bleHead->batLevel, bleHead->vol, bleHead->startCnt);
-						jt808SendToServer(BLE_LINK, TERMINAL_REGISTER, NULL);
-						gpsRequestSet(GPS_REQUEST_BLE);
-					}
-				}
-				break;
-			}
-		
-		case JT808_AUTHENTICATION:
-			if (bleJt808SerConn.runTick % 60 == 0)
-			{
-				if (bleJt808SerConn.authCnt++ > 3)
-				{
-					bleJt808SerConn.authCnt = 0;
-					LogMessage(DEBUG_ALL, "Ble terminal authentication timeout");
-					bleServerReconnect();
-				}
-				else
-				{
-					LogMessage(DEBUG_ALL, "Ble terminal authentication");
-					jt808SendToServer(BLE_LINK, TERMINAL_AUTH, NULL);
-				}
-			}
-			break;
-		case JT808_NORMAL:
-			if (bleJt808SerConn.hbtTick++ == 0)
-			{
-				lbsRequestSet(DEV_EXTEND_OF_BLE);
-                
-				LogMessage(DEBUG_ALL, "Ble Terminal heartbeat");
-                jt808SendToServer(BLE_LINK, TERMINAL_HEARTBEAT, NULL);
-			}
-			gpsinfo = getCurrentGPSInfo();
-			if (gpsinfo->fixstatus)
-			{
-				if (tick++ >= 10)
-				{
-					jt808SendToServer(BLE_LINK, TERMINAL_POSITION, gpsinfo);
-					bleJt808ServerChangeFsm(JT808_END);
-					break;
-				}
-			}
-			else
-			{
-				tick = 0;
-				if (bleJt808SerConn.hbtTick == 30)
-                {
-					wifiRequestSet(DEV_EXTEND_OF_BLE);
-                }
-			}
-			if (bleJt808SerConn.hbtTick >= 180)
-			{
-				jt808SendToServer(BLE_LINK, TERMINAL_POSITION, getLastFixedGPSInfo());
-				bleJt808ServerChangeFsm(JT808_END);
-			}
-			break;
-		case JT808_END:
-			next = bleHead->next;
-			free(bleHead);
-			bleHead = next;
-			socketDel(BLE_LINK);
-			bleJt808ServerChangeFsm(JT808_REGISTER);
-			LogMessage(DEBUG_ALL, "ble server done");
-			break;
-		default:
-			bleJt808ServerChangeFsm(JT808_REGISTER);
-			bleJt808SerConn.hbtTick = 0;
-			break;
-    }
-	bleJt808SerConn.runTick++;
-}
-
-
 
 uint8_t BleSockId(uint8_t i)	
 {
-	if (DEVICE_MAX_CONNECT_COUNT)
+	if (i < DEVICE_MAX_CONNECT_COUNT)
 	{
 		if (i == 0) return BLE1_LINK;
 		else if (i == 1) return BLE2_LINK;
 		else return BLE1_LINK;
 	}
-	/* 默认链路 */
-	else
-	{
-		return BLE1_LINK;
-	}
+	else return BLE1_LINK;
 }
 
 
@@ -1281,7 +834,7 @@ int8_t blePetSearchServerSn(char *Sn)
 	{
 		if (strncmp(blePetServConn[i].loginSn, Sn, 15) == 0 && blePetServConn[i].use)
 		{
-			return i;
+			return BleSockId(i);
 		}
 	}
 	return -1;
@@ -1292,13 +845,23 @@ int8_t blePetSearchServerSn(char *Sn)
 @param
 @return
 @note
+
+添加：3分钟后还是这个SN号，链路断开切换这
+
 **************************************************/
 int8_t blePetServerAdd(char *Sn)
 {
+	/* 如果链路中已存在该SN号,无需修改 */
 	if (blePetSearchServerSn(Sn) >= 0)
 	{
-		LogPrintf(DEBUG_BLE, "blePetServerAdd==>Fail,Sn[%s]", Sn);
+		LogPrintf(DEBUG_BLE, "blePetServerAdd==>Already exist Sn[%s]", Sn);
 		return -1;
+	}
+	/* 如果不存在该SN号的链路，查询是否还有链路空间 */
+	if (blePetSearchIdleServer() < 0)
+	{
+		LogPrintf(DEBUG_BLE, "blePetServerAdd==>No idle server");
+		return -2;
 	}
 	int8_t i; 
 	for (i = 0; i < DEVICE_MAX_CONNECT_COUNT; i++)
@@ -1316,22 +879,55 @@ int8_t blePetServerAdd(char *Sn)
 }
 
 /**************************************************
-@bref		更新蓝牙链路的上报信息
+@bref		删除蓝牙链路
 @param
 @return
 @note
 **************************************************/
+
+int8_t blePetServerDel(char *Sn)
+{
+	/* 无该sn号 */
+	if (blePetSearchServerSn(Sn) < 0)
+	{
+		LogPrintf(DEBUG_BLE, "blePetServerDel==>No this Sn[%s]", Sn);
+		return -1;
+	}
+	for (uint8_t i = 0; i < DEVICE_MAX_CONNECT_COUNT; i++)
+	{
+		if (blePetServConn[i].use)
+		{
+			if (strncmp(Sn, blePetServConn[i].loginSn, 15) == 0)
+			{
+				LogPrintf(DEBUG_BLE, "blePetServerDel==>Ok,Sn[%s],sockid:%d", blePetServConn[i].loginSn, BleSockId(i));
+				tmos_memset(&blePetServConn[i], 0, sizeof(bleSocketInfo_s));
+				return BleSockId(i);
+			}
+		}
+	}
+	return -2;
+}
+
+
+/**************************************************
+@bref		更新蓝牙链路的上报信息
+@param
+@return
+@note
+	更新上报信息之前，先查看上报信息对应的sn号是否存在
+**************************************************/
 int8_t blePetServerUploadUpdate(devSocketData_s *data)
 {
-	if (blePetSearchServerSn(data->SN) >= 0)
+	/* 该链路的SN号不是这次收到，不更新 */
+	if (blePetSearchServerSn(data->SN) < 0)
 	{
-		LogPrintf(DEBUG_BLE, "blePetServerUploadUpdate==>Fail,Sn[%s]", data->SN);
+		LogPrintf(DEBUG_BLE, "blePetServerUploadUpdate==>No exist sn[%s]", data->SN);
 		return -1;
 	}
 	blePetServConn[blePetSearchServerSn(data->SN)].batlevel = data->bat;
 	blePetServConn[blePetSearchServerSn(data->SN)].vol      = data->vol;
 	blePetServConn[blePetSearchServerSn(data->SN)].step		= data->step;
-	LogPrintf(DEBUG_BLE, "Ble(%d)InfoRegister:vol:%f, bat:%d%%, step:%d", 
+	LogPrintf(DEBUG_BLE, "Blelink(%d)InfoRegister:vol:%f, bat:%d%%, step:%d", 
 							blePetSearchServerSn(data->SN), 
 							blePetServConn[blePetSearchServerSn(data->SN)].vol,
 							blePetServConn[blePetSearchServerSn(data->SN)].batlevel,
@@ -1506,10 +1102,11 @@ static void blePetChangeFsm(uint8_t index, NetWorkFsmState fsm)
 
 void blePetServerLoginSuccess(uint8_t index)
 {
+	deviceConnInfo_s *devinfo = bleDevGetInfoBySockid(BleSockId(index));
     blePetServConn[index].loginCount = 0;
     blePetServConn[index].heartbeattick = 0;
     blePetChangeFsm(index, SERV_READY);
-    LogPrintf(DEBUG_ALL, "Ble[%d] Login Success", BleSockId(index));
+    LogPrintf(DEBUG_BLE, "Ble[%d] Login Success", BleSockId(index));
 }
 
 /**************************************************
@@ -1524,7 +1121,7 @@ void blePetServerConnTask(void)
 	uint8_t i, link; 
 	if (isModuleRunNormal() == 0)
     {
-        
+        LogPrintf(DEBUG_BLE, "wait module normal");
         return ;
     }
 	for (i = 0; i < DEVICE_MAX_CONNECT_COUNT; i++)
@@ -1535,21 +1132,21 @@ void blePetServerConnTask(void)
 			{
 				socketDel(BleSockId(i));
 			}
-			return;
+			break;
 		}
 		if (socketGetUsedFlag(BleSockId(i)) == 0)
 		{
 			blePetChangeFsm(i, SERV_LOGIN);
 			blePetServConn[i].loginCount = 0;
 			socketAdd(BleSockId(i), sysparam.bleServer, sysparam.bleServerPort, BlePetSocketRecv(i));
-			//ble2InfoRegister(devInfo->sockData.SN, devInfo->sockData.vol, devInfo->sockData.bat, devInfo->sockData.step);
-			return;
+			break;
 		}
 		
 		if (socketGetConnStatus(BleSockId(i)) != SOCKET_CONN_SUCCESS)
 		{
+			LogPrintf(DEBUG_BLE, "wait blelink:%d server ready", BleSockId(i));
 			blePetChangeFsm(i, SERV_LOGIN);
-			return;
+			break;
 		}
 		switch (blePetServConn[i].fsmstate)
 		{
@@ -1575,9 +1172,8 @@ void blePetServerConnTask(void)
 	            {
 	                blePetServConn[i].heartbeattick = 0;
 	                protocolInfoResiter(blePetServConn[i].batlevel, sysinfo.outsidevoltage > 5.0 ? sysinfo.outsidevoltage : blePetServConn[i].vol,
-	                                    dynamicParam.startUpCnt, dynamicParam.runTime);
+	                                    dynamicParam.startUpCnt, blePetServConn[i].step);
 	                protocolSend(BleSockId(i), PROTOCOL_13, NULL);
-	                //ble2InfoRegister(devInfo->sockData.SN, devInfo->sockData.vol, devInfo->sockData.bat, devInfo->sockData.step);
 	            }
 	            blePetServConn[i].heartbeattick++;
 	            break;

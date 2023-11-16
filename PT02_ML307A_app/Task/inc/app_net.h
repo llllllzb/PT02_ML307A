@@ -129,9 +129,10 @@ typedef struct
 
     uint8_t normalLinkQird		 ;
     uint8_t agpsLinkQird		;
-    uint8_t bleLinkQird 		;
+    uint8_t bleLink1Qird 		;
     uint8_t jt808LinkQird		;
     uint8_t hideLinkQird;
+    uint8_t bleLink2Qird;
 
     uint8_t curQirdId;
     uint8_t rdyQirdId;

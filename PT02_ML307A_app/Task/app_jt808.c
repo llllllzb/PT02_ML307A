@@ -11,7 +11,7 @@
 #include "app_db.h"
 #include "aes.h"
 #include "app_peripheral.h"
-static jt808Info_s jt808_info, blejt808_info;
+static jt808Info_s jt808_info;
 static jt808Position_s jt808_position;
 static jt808TerminalRsp jt808_terminalRespon, ble808_terminalRespon;
 static gpsRestore_s jt808_gpsres;
@@ -33,42 +33,7 @@ void jt808InfoInit(void)
     memset(&jt808_gpsres, 0, sizeof(gpsRestore_s));
 }
 
-/**************************************************
-@bref		blejt808相关初始化
-@param
-@return
-@note
-**************************************************/
 
-void bleJt808InfoInit(void)
-{
-	memset(&blejt808_info, 0, sizeof(jt808Info_s));
-}
-
-/**************************************************
-@bref		blejt808注册状态查询
-@param
-@return
-@note
-**************************************************/
-
-uint8_t bleJt808RegisterGet(void)
-{
-	return blejt808_info.jt808isRegister;
-}
-
-
-/**************************************************
-@bref		blejt808注册状态设置
-@param
-@return
-@note
-**************************************************/
-
-void bleJt808RegisterSet(void)
-{
-	blejt808_info.jt808isRegister = 1;
-}
 
 /**************************************************
 @bref		使用IMEI生成JT808的序列号
@@ -156,10 +121,7 @@ void jt808RegisterTcpSend(uint8_t link, int (*tcpSend)(uint8_t, uint8_t *, uint1
 	{
     	jt808_info.jt808Send = tcpSend;
     }
-    else
-    {
-		blejt808_info.jt808Send = tcpSend;
-    }
+
 }
 
 /**************************************************
@@ -172,12 +134,7 @@ void jt808RegisterTcpSend(uint8_t link, int (*tcpSend)(uint8_t, uint8_t *, uint1
 
 void jt808RegisterBleInfo(uint8_t link, uint8_t batlevel, float vol, uint16_t startcnt)
 {
-	if (link == BLE_LINK)
-	{
-    	blejt808_info.batLevel = batlevel;
-    	blejt808_info.vol = vol;
-    	blejt808_info.startCnt = startcnt;
-    }
+
 }
 
 
@@ -212,11 +169,7 @@ void jt808RegisterLoginInfo(uint8_t link, uint8_t *sn, uint8_t reg, uint8_t *aut
 	    jt808_info.jt808isRegister = reg;
 	    jt808_info.jt808AuthLen = authLen;
     }
-    else
-    {
-    	jt808CreateSn(blejt808_info.jt808sn, sn + 3, 12);
-	    LogPrintf(DEBUG_ALL, "Ble JT808 Sn:%s", sn);
-    }
+
 }
 
 /**************************************************
@@ -233,10 +186,7 @@ void jt808RegisterManufactureId(uint8_t link, uint8_t *id)
 	{
     	strncpy(jt808_info.jt808manufacturerID, id, 5);
     }
-    else
-    {
-		strncpy(blejt808_info.jt808manufacturerID, id, 5);
-    }
+
 }
 /**************************************************
 @bref		注册JT808 终端类型
@@ -252,10 +202,7 @@ void jt808RegisterTerminalType(uint8_t link, uint8_t *type)
 	{
     	strncpy(jt808_info.jt808terminalType, type, 20);
     }
-    else
-    {
-		strncpy(blejt808_info.jt808terminalType, type, 20);
-    }
+
 }
 
 /**************************************************
@@ -272,10 +219,7 @@ void jt808RegisterTerminalId(uint8_t link, uint8_t *id)
 	{
     	strncpy(jt808_info.jt808terminalID, id, 7);
     }
-    else
-    {
-		strncpy(blejt808_info.jt808terminalID, id, 7);
-    }
+
 }
 
 /**************************************************
@@ -327,16 +271,7 @@ int jt808TcpSend(uint8_t link, uint8_t *data, uint16_t len)
 		ret = ret > 0 ? 1 : 0;
 		return ret;
     }
-    else if (link == BLE_LINK)
-    {
-		if (blejt808_info.jt808Send == NULL)
-		{
-		    return 0;
-		}
-		ret = blejt808_info.jt808Send(link, data, len);
-		ret = ret > 0 ? 1 : 0;
-		return ret;
-    }
+
     return 0;
 }
 
@@ -816,10 +751,7 @@ static uint16_t jt808TerminalPosition(uint8_t link, uint8_t *dest, uint8_t *sn, 
     {
     	dest[len++] = getBatteryLevel();	//电量百分比
     }
-   	else if (link == BLE_LINK)
-   	{
-		dest[len++] = blejt808_info.batLevel;
-   	}
+
     dest[len++] = (value >> 8) & 0xff;
     dest[len++] = value & 0xff;
     //电池电压
@@ -844,11 +776,7 @@ static uint16_t jt808TerminalPosition(uint8_t link, uint8_t *dest, uint8_t *sn, 
 	    dest[len++] = (dynamicParam.startUpCnt >> 8) & 0xff;
 	    dest[len++] = dynamicParam.startUpCnt & 0xff; 
 	}
-	else if (link == BLE_LINK)
-	{
-		dest[len++] = (blejt808_info.startCnt >> 8) & 0xff;
-		dest[len++] = blejt808_info.startCnt & 0xff;
-	}
+
     if (type == 1)
     {
         /*------------------附加消息--------------------*/
@@ -1228,11 +1156,7 @@ static void jt808TranmissionData(uint8_t link, uint8_t *sn, void *param)
 	        {
 	            len = transmissionF8(dest, len, transmission->param, &jt808_terminalRespon);
 	        }
-	        else if (link == BLE_LINK)
-	        {
-	        	blersp.platform_serial = (jt808bleIns_serial[0] << 8) | jt808bleIns_serial[1];
-				len = transmissionF8(dest, len, transmission->param, &blersp);
-	        }
+
             break;
     }
 
@@ -1258,8 +1182,7 @@ void jt808SendToServer(uint8_t link, JT808_PROTOCOL protocol, void *param)
     {
         return;
     }
-	if (link == JT808_LINK)
-	{
+
 	    switch (protocol)
 	    {
 	        case TERMINAL_REGISTER:
@@ -1290,40 +1213,9 @@ void jt808SendToServer(uint8_t link, JT808_PROTOCOL protocol, void *param)
 	            jt808BatchUpload(link, jt808_info.jt808sn, (batch_upload_s *)param);
 	            break;
 	    }
-    }
-    else if (link == BLE_LINK)
-    {
-		switch (protocol)
-	    {
-	        case TERMINAL_REGISTER:
-	            jt808TerminalRegister(link, blejt808_info.jt808sn, blejt808_info.jt808manufacturerID, blejt808_info.jt808terminalType,
-	                                  blejt808_info.jt808terminalID, 0);
-	            break;
-	        case TERMINAL_AUTH:
-	            jt808TerminalAuthentication(link, blejt808_info.jt808sn, blejt808_info.jt808AuthCode, blejt808_info.jt808AuthLen);
-	            break;
-	        case TERMINAL_HEARTBEAT:
-	            jt808TerminalHeartbeat(link, blejt808_info.jt808sn);
-	            break;
-	        case TERMINAL_POSITION:
-	            jt808SendPosition(link, blejt808_info.jt808sn, (gpsinfo_s *)param);
-	            break;
-//	        case TERMINAL_ATTRIBUTE:
-//	            iccid = getModuleICCID();
-//	            jt808TerminalAttribute(link, blejt808_info.jt808sn, blejt808_info.jt808manufacturerID, blejt808_info.jt808terminalType,
-//	                                   blejt808_info.jt808terminalID, (uint8_t *)iccid);
-//	            break;
-//	        case TERMINAL_GENERICRESPON:
-//	            jt808GenericRespon(link, blejt808_info.jt808sn, (jt808TerminalRsp *)param);
-//	            break;
-	        case TERMINAL_DATAUPLOAD:
-	            jt808TranmissionData(link, blejt808_info.jt808sn, param);
-	            break;
-//	        case TERMINAL_BATCHUPLOAD:
-//	            jt808BatchUpload(link, blejt808_info.jt808sn, (batch_upload_s *)param);
-//	            break;
-	    }
-    }
+
+
+
 
 
 }
@@ -1375,23 +1267,7 @@ static void jt808RegisterResponParser(uint8_t link, uint8_t *msg, uint16_t len)
 	        LogMessage(DEBUG_ALL, "Register OK");
 	    }
     }
-    else if (link == BLE_LINK)
-    {
-		if (result == 0)
-		{
-			for (j = 0; j < (len - 3); j++)
-	        {
-	            blejt808_info.jt808AuthCode[j] = msg[j + 3];
-	        }
-	        blejt808_info.jt808AuthLen = len - 3;
-	        blejt808_info.jt808isRegister = 1;
-	        LogMessage(DEBUG_ALL, "Ble Register OK");
-		}
-		else 
-		{
-			LogMessage(DEBUG_ALL, "Ble Register FAIL");
-		}
-    }
+
 }
 
 /**************************************************
@@ -1428,19 +1304,7 @@ static void jt808ReceiveF8(uint8_t link, uint8_t *msg, uint16_t len)
     {
         instructionParser(msg, len, JT808_MODE, &insParam);
     }
-    else if (link == BLE_LINK)
-    {
-    	setJt808BleIns();
-        char encrypt[256];
-        unsigned char encryptLen;
-        uint16_t msglen = len;
-        sprintf(encrypt, "CMD[01020304]:%s", msg);
-        msglen += 14;
-        encrypt[msglen] = 0;
-        LogPrintf(DEBUG_ALL, "CMD:%s", encrypt);
-        encryptData(encrypt, &encryptLen, encrypt, msglen);
-        appSendNotifyData(encrypt, encryptLen);
-    }
+
 }
 
 /**************************************************
@@ -1497,23 +1361,7 @@ static void jt808GenericResponParser(uint8_t link, uint8_t *msg, uint16_t len)
 	            break;
 	    }
     }
-    else if (link == BLE_LINK)
-    {
-		switch (protocol)
-	    {
-	        case TERMINAL_AUTHENTICATION_MSGID:
-	            if (result == 0)
-	            {
-	                bleJt808ServerAuthSuccess();
-	                LogMessage(DEBUG_ALL, "Ble Authtication success");
-	            }
-	            else
-	            {
-	                LogPrintf(DEBUG_ALL, "Ble Authtication Fail,result:%d", result);
-	            }
-	            break;
-	    }
-    }
+
 }
 
 
@@ -1670,11 +1518,7 @@ void jt808ReceiveParser(uint8_t link, uint8_t *src, uint16_t len)
 	                jt808_terminalRespon.platform_id = protocol;
 	                jt808_terminalRespon.platform_serial = src[i + 11] << 8 | src[i + 12];
                 }
-                else if (link == BLE_LINK)
-                {
-					ble808_terminalRespon.platform_id = protocol;
-					ble808_terminalRespon.platform_serial = src[i + 11] << 8 | src[i + 12];
-				}
+
 				jt808ProtocolParser(link, protocol, src + i + 13, msglen);
                 i = k + 1;
             }

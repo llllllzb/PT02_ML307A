@@ -1,10 +1,11 @@
 #include "app_central.h"
 #include "app_sys.h"
-#include "app_bleRelay.h"
+#include "app_instructioncmd.h"
 #include "app_task.h"
 #include "app_server.h"
 #include "app_param.h"
 #include "app_bleprotocol.h"
+#include "app_protocol.h"
 //全局变量
 
 tmosTaskID bleCentralTaskId = INVALID_TASK_ID;
@@ -150,13 +151,16 @@ static void attReadByTypeRspCB(gattMsgEvent_t *pMsgEvt)
 
 static void gattMessageHandler(gattMsgEvent_t *pMsgEvt)
 {
-    char debug[100];
+    char debug[101] = { 0 };
+    uint8_t debuglen;
     uint8 dataLen, infoLen, numOf, i;
     uint8 *pData;
     uint8_t uuid16[16];
     uint16 uuid, startHandle, endHandle, findHandle;
     bStatus_t status;
-    LogPrintf(DEBUG_ALL, "Handle[%d],Method[0x%02X],Status[0x%02X]", pMsgEvt->connHandle, pMsgEvt->method,
+    int8_t socketid;
+    insParam_s insparam;
+    LogPrintf(DEBUG_DETAIL, "Handle[%d],Method[0x%02X],Status[0x%02X]", pMsgEvt->connHandle, pMsgEvt->method,
               pMsgEvt->hdr.status);
     switch (pMsgEvt->method)
     {
@@ -237,9 +241,26 @@ static void gattMessageHandler(gattMsgEvent_t *pMsgEvt)
         case ATT_HANDLE_VALUE_NOTI:
             pData = pMsgEvt->msg.handleValueNoti.pValue;
             dataLen = pMsgEvt->msg.handleValueNoti.len;
-            byteToHexString(pData, debug, dataLen);
-            debug[dataLen * 2] = 0;
+            debuglen = dataLen > 50 ? 50 : dataLen;
+            byteToHexString(pData, debug, debuglen);
+            debug[debuglen * 2] = 0;
             LogPrintf(DEBUG_BLE, "^^Handle[%d],Recv:[%s]", pMsgEvt->connHandle, debug);
+            if (pData[0] != 0) {
+				
+            }
+            if (my_getstrindex(pData, "RE:", dataLen) >= 0)
+            {
+				if (sysparam.protocol == ZT_PROTOCOL_TYPE)
+				{
+					socketid = bleDevGetSocketidByHandle(pMsgEvt->connHandle);
+					if (socketid >= 0)
+					{
+						insparam.data = pData;
+		        		insparam.len = dataLen;	
+		        		protocolSend(socketid, PROTOCOL_21, &insparam);
+	        		}
+				}
+            }
             bleProtoclRecvParser(pMsgEvt->connHandle, pData, dataLen);
             break;
         default:
@@ -335,8 +356,7 @@ static tmosEvents bleCentralTaskEventProcess(tmosTaskID taskID, tmosEvents event
     if (event & BLE_TASK_SCHEDULE_EVENT)
     {
         bleScheduleTask();
-        //blePeriodTask();
-        //bleRelaySendDataTry();
+		bleProtocolSendPeriod();
         bleProtocolSendEventTask();
         return event ^ BLE_TASK_SCHEDULE_EVENT;
     }
@@ -359,7 +379,7 @@ static void deviceInfoEventHandler(gapDeviceInfoEvent_t *pEvent)
 
     byteToHexString(pEvent->addr, debug, B_ADDR_LEN);
     debug[B_ADDR_LEN * 2] = 0;
-    LogPrintf(DEBUG_BLE, "MAC:[%s],TYPE:0x%02X,RSSI:%d", debug, pEvent->addrType, pEvent->rssi);
+    LogPrintf(DEBUG_MORE, "MAC:[%s],TYPE:0x%02X,RSSI:%d", debug, pEvent->addrType, pEvent->rssi);
 
     tmos_memset(&scaninfo, 0, sizeof(deviceScanInfo_s));
     tmos_memcpy(scaninfo.addr, pEvent->addr, B_ADDR_LEN);
@@ -393,9 +413,10 @@ static void deviceInfoEventHandler(gapDeviceInfoEvent_t *pEvent)
                     }
                     tmos_memcpy(scaninfo.broadcaseName, pEvent->pEvtData + i + 2, dataLen - 1);
                     scaninfo.broadcaseName[dataLen - 1] = 0;
-                    LogPrintf(DEBUG_BLE, "<---->BroadName:[%s]", scaninfo.broadcaseName);
+                    LogPrintf(DEBUG_MORE, "<---->BroadName:[%s]", scaninfo.broadcaseName);
                     if (my_strpach(scaninfo.broadcaseName, "PT13"))
                     {
+                    	
 						bleDevScanInfoAdd(&scaninfo);
                     }
                     break;
@@ -481,7 +502,7 @@ void gapDeviceDiscoveryEvent(deviceScanList_s *list)
 
 static void bleCentralEventCallBack(gapRoleEvent_t *pEvent)
 {
-    LogPrintf(DEBUG_BLE, "bleCentral Event==>[0x%02X]", pEvent->gap.opcode);
+    LogPrintf(DEBUG_MORE, "bleCentral Event==>[0x%02X]", pEvent->gap.opcode);
     switch (pEvent->gap.opcode)
     {
         case GAP_DEVICE_INIT_DONE_EVENT:
@@ -490,6 +511,7 @@ static void bleCentralEventCallBack(gapRoleEvent_t *pEvent)
         case GAP_DEVICE_DISCOVERY_EVENT:
             LogPrintf(DEBUG_BLE, "bleCentral discovery done!");
             gapDeviceDiscoveryEvent(&scanList);
+            tmos_memset(&scanList, 0 ,sizeof(deviceScanList_s));
             break;
         case GAP_ADV_DATA_UPDATE_DONE_EVENT:
             break;
@@ -719,6 +741,7 @@ int8_t bleDevConnAdd(uint8_t *addr, uint8_t addrType)
             devInfoList[i].startHandle = 0;
             devInfoList[i].endHandle = 0;
             devInfoList[i].use = 1;
+            devInfoList[i].updateTick = sysinfo.sysTick;
             //不用添加devInfoList[i].discState = BLE_DISC_STATE_IDLE,由蓝牙状态回调来改写
             return i;
         }
@@ -753,6 +776,13 @@ int8_t bleDevConnDel(uint8_t *addr)
     return -1;
 }
 
+/**************************************************
+@bref       删除链接列表中的所有对象
+@param
+@return
+@note
+**************************************************/
+
 void bleDevConnDelAll(void)
 {
     uint8_t i;
@@ -768,6 +798,7 @@ void bleDevConnDelAll(void)
         }
     }
 }
+
 /**************************************************
 @bref       链接成功，查找对象并赋值句柄
 @param
@@ -833,9 +864,11 @@ static void bleDevDisconnect(uint16_t connHandle)
             devInfoList[i].findCharDone = 0;
             devInfoList[i].notifyDone = 0;
             devInfoList[i].discState = BLE_DISC_STATE_IDLE;
+            tmos_memset(&devInfoList[i].sockData, 0, sizeof(devSocketData_s));//断开时，要清除上报的信息
             byteToHexString(devInfoList[i].addr, debug, 6);
             debug[12] = 0;
             LogPrintf(DEBUG_BLE, "Device [%s] disconnect,Handle[%d]", debug, connHandle);
+            bleSendDataReqClear(i, BLE_SEND_ALL_EVENT);	//断开要清除发送请求
             bleSchduleChangeFsm(BLE_SCHEDULE_IDLE);
             return;
         }
@@ -965,7 +998,7 @@ static void bleDevDiscoverServByUuid(void)
             return;
         }
     }
-    LogPrintf(DEBUG_BLE, "bleDevDiscoverServByUuid==>Error");
+    LogPrintf(DEBUG_BLE, "bleDevDiscoverServByUuid==>Error, disconnect");
 }
 
 /**************************************************
@@ -1127,10 +1160,10 @@ void bleDevScanInfoAdd(deviceScanInfo_s *devInfo)
     uint8_t i, j;
     if (scanList.cnt >= SCAN_LIST_MAX_SIZE)
     {
-    	LogPrintf(DEBUG_BLE, "bleDevScanInfoAdd==>fail");
+    	LogPrintf(DEBUG_MORE, "bleDevScanInfoAdd==>fail");
         return;
     }
-    LogPrintf(DEBUG_BLE, "bleDevScanInfoAdd==>OK");
+    //LogPrintf(DEBUG_BLE, "bleDevScanInfoAdd==>OK");
     for (i = 0; i < scanList.cnt; i++)
     {
         if (devInfo->rssi > scanList.list[i].rssi)
@@ -1236,7 +1269,7 @@ deviceConnInfo_s *bleDevGetInfoBySockid(uint8_t sockid)
 @note
 **************************************************/
 
-deviceConnInfo_s *bleDevGetInfoByHandle(uint8_t handle)
+deviceConnInfo_s *bleDevGetInfoByHandle(uint16_t handle)
 {
 	uint8_t i;
 	for (i = 0; i < DEVICE_MAX_CONNECT_COUNT; i++)
@@ -1297,7 +1330,7 @@ uint8_t *bleDevGetAddrByHandle(uint16_t connHandle)
 @note
 **************************************************/
 
-int8_t bleDevGetIndexByHandle(uint8_t connHandle)
+int8_t bleDevGetIndexByHandle(uint16_t connHandle)
 {
 	int8_t i;
 	for (i = 0; i < DEVICE_MAX_CONNECT_COUNT; i++)
@@ -1306,6 +1339,26 @@ int8_t bleDevGetIndexByHandle(uint8_t connHandle)
         {
             return i;
         }
+	}
+	return -1;
+}
+
+/**************************************************
+@bref       通过handle，获取对应socketid
+@param
+@return
+@note
+**************************************************/
+
+int8_t bleDevGetSocketidByHandle(uint16_t connHandle)
+{
+	uint8_t i;
+	for (i = 0; i < DEVICE_MAX_CONNECT_COUNT; i++)
+	{
+		if (devInfoList[i].connHandle == connHandle && devInfoList[i].use)
+		{
+			return devInfoList[i].socketId;
+		}
 	}
 	return -1;
 }
@@ -1400,27 +1453,6 @@ uint8_t bleDevGetBleMacCnt(void)
 	}
 	return cnt;
 }
-int8_t bleInsert(uint8_t *addr, uint8_t addrType)
-{
-    int8_t ret = -1;
-    uint8_t i;
-    for (i = 0; i < BLE_CONNECT_LIST_SIZE; i++)
-    {
-        if (devInfoList[i].use == 0)
-        {
-            
-            devInfoList[i].use = 1;
-            tmos_memcpy(devInfoList[i].addr, addr, 6);
-            devInfoList[i].addrType = addrType;
-            ret = bleDevConnAdd(addr, addrType);
-//            bleRelaySetReq(i, BLE_EVENT_SET_RF_THRE | BLE_EVENT_SET_OUTV_THRE | BLE_EVENT_SET_AD_THRE | BLE_EVENT_GET_AD_THRE |
-//                           BLE_EVENT_GET_RF_THRE | BLE_EVENT_GET_OUT_THRE | BLE_EVENT_GET_OUTV | BLE_EVENT_GET_RFV |
-//                           BLE_EVENT_GET_PRE_PARAM | BLE_EVENT_SET_PRE_PARAM | BLE_EVENT_GET_PRE_PARAM | BLE_EVENT_CHK_SOCKET);
-            return ret;
-        }
-    }
-    return ret;
-}
 
 
 uint8 bleHandShakeTask(void)
@@ -1428,7 +1460,7 @@ uint8 bleHandShakeTask(void)
     uint8_t i;
     static uint16_t timeouttick_dev1 = 0;
     static uint16_t timeouttick_dev2 = 0;
-    bleRelayInfo_s *relayinfo;
+
     deviceConnInfo_s *devinfo;
     if (primaryServerIsReady())
     {
@@ -1492,6 +1524,31 @@ uint8 bleHandShakeTask(void)
 }
 
 /**************************************************
+@bref       蓝牙断连检测
+@param
+@return
+@note
+**************************************************/
+
+void bleDisconnDetect(void)
+{
+	uint8_t i;
+	for (i = 0; i < DEVICE_MAX_CONNECT_COUNT; i++)
+	{
+		if (devInfoList[i].use)
+		{
+			LogPrintf(DEBUG_ALL, "ble update tick:%d", devInfoList[i].updateTick);
+			if (sysinfo.sysTick - devInfoList[i].updateTick >= 180)
+			{
+				LogPrintf(DEBUG_ALL, "ble lost tick:%d ,systick:%d", devInfoList[i].updateTick, sysinfo.sysTick);
+				bleDevConnDel(devInfoList[i].addr);
+				blePetServerDel(devInfoList[i].sockData.SN);
+			}
+		}
+	}
+}
+
+/**************************************************
 @bref       蓝牙链接管理调度器状态切换
 @param
 @return
@@ -1517,8 +1574,8 @@ static void bleScheduleTask(void)
     static uint8_t ind = 0;
     
 	bleDevScanProcess();
-//	bleHandShakeTask();
-//	bleDevTerminateByConnPermit();
+	bleDisconnDetect();
+
     switch (bleSchedule.fsm)
     {
     	case BLE_SCHEDULE_IDLE:
@@ -1594,6 +1651,7 @@ uint8_t bleDevScanProcess(void)
 	switch (bleScanFsm)
 	{
 		case BLE_SCAN_IDLE:
+			/* 无绑定设备则开启扫描 */
 			if (bleDevGetBleMacCnt() == 0 && bleDevGetCnt() < DEVICE_MAX_CONNECT_COUNT)
 			{
 				bleCentralStartDiscover();
@@ -1607,12 +1665,14 @@ uint8_t bleDevScanProcess(void)
 			}
 			break;
 		case BLE_SCAN_DONE:
-			/* 加入蓝牙调度器 */
-			bleScanFsmChange(BLE_SCAN_IDLE);
+	
 			break;
 
 		case BLE_SCAN_WAIT:
-
+			if (bleScanTick++ >= 30)
+			{
+				bleScanFsmChange(BLE_SCAN_IDLE);
+			}
 			break;
 		default:
 

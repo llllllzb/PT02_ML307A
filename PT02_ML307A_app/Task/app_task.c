@@ -13,7 +13,7 @@
 #include "app_socket.h"
 #include "app_server.h"
 #include "app_jt808.h"
-#include "app_bleRelay.h"
+
 #include "app_peripheral.h"
 
 #define SYS_LED1_ON       LED1_ON
@@ -1244,43 +1244,13 @@ static void voltageCheckTask(void)
             lbsRequestSet(DEV_EXTEND_OF_MY);
             wifiRequestSet(DEV_EXTEND_OF_MY);
             gpsRequestSet(GPS_REQUEST_UPLOAD_ONE);
-            if (sysparam.bleRelay != 0 && bleCutFlag != 0)
-            {
-				LogMessage(DEBUG_ALL, "ble relay on immediately");
-				sysparam.relayCtl = 1;
-				paramSaveAll();
-//				if (sysparam.relayFun)
-//				{
-//					relayAutoClear();
-//					bleRelayClearAllReq(BLE_EVENT_SET_DEVOFF);
-//                    bleRelaySetAllReq(BLE_EVENT_SET_DEVON);
-//				}
-//				else
-//				{
-//					relayAutoRequest();
-//				}
-            }
-            else
-            {
-				LogMessage(DEBUG_ALL, "relay on was disable");
-            }
+
         }
     }
     else if (sysinfo.outsidevoltage > 6.0)
     {
     	//电压小于设置的保护电压范围时，则运行蓝牙去执行断电报警
-		if (sysinfo.outsidevoltage > sysparam.bleVoltage)
-		{
-			if (bleCutTick++ >= 30)
-			{
-				bleCutFlag = 1;
-			}
-		}
-		else
-		{
-			bleCutFlag = 0;
-			bleCutTick = 0;
-		}
+
     	lostTick = 0;
         terminalCharge();
         if (LostVoltageFlag == 1)
@@ -1612,13 +1582,7 @@ static void sendLbs(void)
         protocolSend(NORMAL_LINK, PROTOCOL_19, NULL);
         jt808SendToServer(JT808_LINK, TERMINAL_POSITION, getCurrentGPSInfo());
     }
-    if (sysinfo.lbsExtendEvt & DEV_EXTEND_OF_BLE)
-    {
-    	LogPrintf(DEBUG_ALL, "lbs send");
-    	sysinfo.jt808Lbs = 1;
-        protocolSend(BLE_LINK, PROTOCOL_19, NULL);
-        jt808SendToServer(BLE_LINK, TERMINAL_POSITION, getCurrentGPSInfo());
-    }
+
     sysinfo.lbsExtendEvt = 0;
 }
 /**************************************************
@@ -1890,113 +1854,7 @@ void sosRequestSet(void)
     sysinfo.doSosFlag = 1;
 }
 
-static void sosRequestTask(void)
-{
-    static uint8_t runTick;
-    static uint8_t runFsm = 0;
-    static uint8_t ind;
-    char  msg[80];
-    uint8_t flag = 0;
 
-    if (sysinfo.doSosFlag == 0)
-    {
-        runFsm = 0;
-        return;
-    }
-    if (sysparam.sosalm == ALARM_TYPE_NONE)
-    {
-        sysinfo.doSosFlag = 0;
-        return ;
-    }
-    if (isModuleRunNormal() == 0 || getTcpNack())
-    {
-        return;
-    }
-    switch (runFsm)
-    {
-        case 0:
-            //gprs
-            runFsm = 1;
-            runTick = 0;
-            ind = 0;
-            alarmRequestSet(ALARM_SOS_REQUEST);
-            if (sysparam.sosalm == ALARM_TYPE_GPRS)
-            {
-                runFsm = 99;
-            }
-            break;
-        case 1:
-            if (++runTick <= 3)
-            {
-                break;
-            }
-            runTick = 0;
-            //sms
-            flag = 0;
-            for (; ind < 3;)
-            {
-                if (sysparam.sosNum[ind][0] != 0)
-                {
-                    flag = 1;
-                    sprintf(msg, "Your device(%s) is sending you an SOS alert", dynamicParam.SN);
-                    //LogPrintf(DEBUG_ALL, "[%s]==>%s", sysparam.sosNum[ind], msg);
-                    sendMessage(msg, strlen(msg), sysparam.sosNum[ind]);
-                    ind++;
-                    break;
-                }
-                else
-                {
-                    ind++;
-                }
-            }
-            if (flag == 0)
-            {
-                runFsm = 2;
-                runTick = 60;
-                ind = 0;
-                if (sysparam.sosalm == ALARM_TYPE_GPRS_SMS)
-                {
-                    runFsm = 99;
-                }
-            }
-            break;
-        case 2:
-            if (++runTick <= 60)
-            {
-                break;
-            }
-            runTick = 0;
-            //tel
-            flag = 0;
-            for (; ind < 3;)
-            {
-                if (sysparam.sosNum[ind][0] != 0)
-                {
-                    flag = 1;
-
-                    LogPrintf(DEBUG_ALL, "Try to call [%s]", sysparam.sosNum[ind]);
-                    stopCall();
-                    callPhone(sysparam.sosNum[ind]);
-                    ind++;
-                    break;
-                }
-                else
-                {
-                    ind++;
-                }
-            }
-            if (flag == 0)
-            {
-                stopCall();
-                runFsm = 99;
-            }
-            break;
-        default:
-            sysinfo.doSosFlag = 0;
-            LogMessage(DEBUG_ALL, "SOS Done!!!");
-            break;
-    }
-}
 
 /**************************************************
 @bref       gsensor检查任务
@@ -2059,7 +1917,7 @@ void taskRunInSecond(void)
     sysModeRunTask();
     serverManageTask();
     autoSleepTask();
-    sosRequestTask();
+
 }
 
 
@@ -2106,7 +1964,7 @@ void doDebugRecvPoll(uint8_t *msg, uint16_t len)
 void myTaskPreInit(void)
 {
     tmos_memset(&sysinfo, 0, sizeof(sysinfo));
-	sysinfo.logLevel = DEBUG_ALL;
+	sysinfo.logLevel = DEBUG_BLE;
 
     SetSysClock(CLK_SOURCE_PLL_60MHz);
     portGpioSetDefCfg();
@@ -2173,15 +2031,5 @@ void myTaskInit(void)
     sysinfo.taskId = TMOS_ProcessEventRegister(myTaskEventProcess);
     tmos_start_reload_task(sysinfo.taskId, APP_TASK_KERNAL_EVENT, MS1_TO_SYSTEM_TIME(100));
     tmos_start_reload_task(sysinfo.taskId, APP_TASK_POLLUART_EVENT, MS1_TO_SYSTEM_TIME(10));
-    if (sysparam.bleen == 1)
-    {	
-    	char broadCastNmae[30];
-		sprintf(broadCastNmae, "%s-%s", "AUTO", dynamicParam.SN + 9);
-    	appPeripheralBroadcastInfoCfg(broadCastNmae);
-    }
-    else if (sysparam.bleen == 0)
-    {
-		appPeripheralCancel();
-    }
 }
 

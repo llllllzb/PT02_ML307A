@@ -187,64 +187,7 @@ static bStatus_t appReadAttrCB(uint16 connHandle, gattAttribute_t *pAttr,
 //SN:999913436051195,292,3.77,46
 void bleRecvParser(char *data, uint16_t len)
 {
-    ITEM item;
-    insParam_s insparam;
-    bleInfo_s devInfo;
-    int index;
-    char *rebuf;
-    int16_t relen;
-    char dec[256] = {0};
-    uint8_t decLen, ret;
-    char debugStr[100];
 
-    ret = dencryptData(dec, &decLen, data, len);
-    if (ret == 0)
-    {
-        //解析失败
-        dencryptStr(data, len, dec, &decLen);
-        tmos_memset(debugStr, 0, 100);
-        byteToHexString(dec, debugStr, decLen);
-        debugStr[decLen * 2] = 0;
-        LogPrintf(DEBUG_ALL, "解密后[%s]", debugStr);
-        return;
-    }
-	dec[decLen] = 0;
-	LogPrintf(DEBUG_ALL, "解密后[%s]", dec);
-	
-    rebuf = dec;
-    relen = decLen;
-	
-    if ((index = my_getstrindex(rebuf, "RE:", relen)) >= 0)
-    {
-    	if (sysparam.protocol == ZT_PROTOCOL_TYPE)
-    	{
-	        setInsId();
-	        insparam.data = rebuf;
-	        insparam.len = relen;
-	        protocolSend(BLE_LINK, PROTOCOL_21, &insparam);
-        }
-        else if (sysparam.protocol == JT808_PROTOCOL_TYPE)
-        {
-			jt808MessageSend(BLE_LINK, rebuf, relen);
-        }
-    }
-    else if ((index = my_getstrindex(rebuf, "SN:", relen)) >= 0)
-    {
-        rebuf += index + 3;
-        relen -= index + 3;
-        stringToItem(&item, rebuf, relen);
-        if (item.item_cnt == 4)
-        {
-            strncpy(devInfo.imei, item.item_data[0], 15);
-            devInfo.imei[15] = 0;
-            devInfo.startCnt = atoi(item.item_data[1]);
-            devInfo.vol = atof(item.item_data[2]);
-            devInfo.batLevel = atoi(item.item_data[3]);
-
-            bleServerAddInfo(devInfo);
-            tmos_start_task(appPeripheralTaskId, APP_UPDATE_MCU_RTC_EVENT, MS1_TO_SYSTEM_TIME(200));
-        }
-    }
 }
 
 

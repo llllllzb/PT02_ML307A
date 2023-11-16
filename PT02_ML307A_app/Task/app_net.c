@@ -556,9 +556,9 @@ static void queryRecvBuffer(void)
         qirdCmdSend(AGPS_LINK, moduleState.agpsLinkQird);
 
     }
-    else if (moduleState.bleLinkQird)
+    else if (moduleState.bleLink1Qird)
     {
-        qirdCmdSend(BLE_LINK, moduleState.bleLinkQird);
+        qirdCmdSend(BLE1_LINK, moduleState.bleLink1Qird);
 
     }
     else if (moduleState.jt808LinkQird)
@@ -570,6 +570,11 @@ static void queryRecvBuffer(void)
     {
         qirdCmdSend(HIDDEN_LINK, moduleState.hideLinkQird);
 
+    }
+    else if (moduleState.bleLink2Qird)
+    {
+
+        qirdCmdSend(BLE2_LINK, moduleState.bleLink2Qird);
     }
 }
 
@@ -1111,8 +1116,8 @@ static void qiurcParser(uint8_t *buf, uint16_t len)
                     case NORMAL_LINK:
                         moduleState.normalLinkQird = 1;
                         break;
-                    case BLE_LINK:
-                        moduleState.bleLinkQird = 1;
+                    case BLE1_LINK:
+                        moduleState.bleLink1Qird = 1;
                         break;
                     case JT808_LINK:
                         moduleState.jt808LinkQird = 1;
@@ -1122,6 +1127,9 @@ static void qiurcParser(uint8_t *buf, uint16_t len)
                         break;
                     case AGPS_LINK:
                         moduleState.agpsLinkQird = 1;
+                        break;
+                    case BLE2_LINK:
+                        moduleState.bleLink2Qird = 1;
                         break;
                 }
             }
@@ -1379,10 +1387,7 @@ static void mwifiscaninfoParser(uint8_t *buf, uint16_t len)
         }
         if (sysinfo.wifiExtendEvt & DEV_EXTEND_OF_BLE)
         {
-        	LogPrintf(DEBUG_ALL, "wifi send");
-        	jt808UpdateWifiinfo(&wifiList);
-            protocolSend(BLE_LINK, PROTOCOL_F3, &wifiList);
-            jt808SendToServer(BLE_LINK, TERMINAL_POSITION, getCurrentGPSInfo());
+
         }
         sysinfo.wifiExtendEvt = 0;
     }
@@ -1762,8 +1767,8 @@ uint8_t mipurcParser(uint8_t *buf, uint16_t len)
 				case NORMAL_LINK:
 					moduleState.normalLinkQird = 1;
 					break;
-				case BLE_LINK:
-					moduleState.bleLinkQird = 1;
+				case BLE1_LINK:
+					moduleState.bleLink1Qird = 1;
 					break;
 				case JT808_LINK:
 					moduleState.jt808LinkQird = 1;
@@ -1774,6 +1779,9 @@ uint8_t mipurcParser(uint8_t *buf, uint16_t len)
 				case AGPS_LINK:
 					moduleState.agpsLinkQird = 1;
 					break;
+                case BLE2_LINK:
+                    moduleState.bleLink2Qird = 1;
+                    break;
 			}
 
         }
@@ -1858,8 +1866,8 @@ static void miprdParser(uint8_t *buf, uint16_t len)
 				case NORMAL_LINK:
 					moduleState.normalLinkQird = 0;
 					break;
-				case BLE_LINK:
-					moduleState.bleLinkQird = 0;
+				case BLE1_LINK:
+					moduleState.bleLink1Qird = 0;
 					break;
 				case JT808_LINK:
 					moduleState.jt808LinkQird = 0;
@@ -1870,6 +1878,9 @@ static void miprdParser(uint8_t *buf, uint16_t len)
 				case AGPS_LINK:
 					moduleState.agpsLinkQird = 0;
 					break;
+                case BLE2_LINK:
+                    moduleState.bleLink2Qird = 0;
+                    break;
 			}
 			LogPrintf(DEBUG_ALL, "Socket[%d] recv Done", link);
 		}
@@ -2182,8 +2193,8 @@ void moduleRecvParser(uint8_t *buf, uint16_t bufsize)
                     case NORMAL_LINK:
                         moduleState.normalLinkQird = 0;
                         break;
-                    case BLE_LINK:
-                        moduleState.bleLinkQird = 0;
+                    case BLE1_LINK:
+                        moduleState.bleLink1Qird = 0;
                         break;
                     case JT808_LINK:
                         moduleState.jt808LinkQird = 0;
@@ -2193,6 +2204,9 @@ void moduleRecvParser(uint8_t *buf, uint16_t bufsize)
                         break;
                     case AGPS_LINK:
                         moduleState.agpsLinkQird = 0;
+                        break;
+                    case BLE2_LINK:
+                        moduleState.bleLink2Qird = 0;
                         break;
                 }
                 LogPrintf(DEBUG_ALL, "Link[%d] recv err", moduleState.curQirdId);

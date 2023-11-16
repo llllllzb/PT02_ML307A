@@ -13,7 +13,10 @@ Task/app_bleprotocol.o: ../Task/app_bleprotocol.c \
  ../StdPeriphDriver/inc/CH58x_spi.h ../StdPeriphDriver/inc/CH58x_usbdev.h \
  ../StdPeriphDriver/inc/CH58x_usbhost.h ../StdPeriphDriver/inc/ISP583.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\APP\include/app_central.h \
- R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_server.h
+ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_server.h \
+ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_socket.h \
+ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_param.h \
+ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_bleprotocol.h:
 
@@ -60,3 +63,9 @@ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h:
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\APP\include/app_central.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_server.h:
+
+R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_socket.h:
+
+R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_param.h:
+
+R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h:

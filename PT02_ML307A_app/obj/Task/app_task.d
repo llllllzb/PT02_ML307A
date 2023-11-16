@@ -30,7 +30,6 @@ Task/app_task.o: ../Task/app_task.c \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_jt808.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_protocol.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_gps.h \
- R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_bleRelay.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\APP\include/app_peripheral.h
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_protocol.h:
@@ -110,7 +109,5 @@ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_jt808.h:
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_protocol.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_gps.h:
-
-R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_bleRelay.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\APP\include/app_peripheral.h:
