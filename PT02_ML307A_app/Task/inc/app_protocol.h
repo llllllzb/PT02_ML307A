@@ -78,7 +78,7 @@ void gpsRestoreDataSend(gpsRestore_s *grs, char *dest	, uint16_t *len);
 void save123InstructionId(void);
 void reCover123InstructionId(void);
 
-void getBle1Insid(void);
+void setBle1InsId(void);
 void getBle1Insid(void);
 void getBle2Insid(void);
 void setBle2InsId(void);

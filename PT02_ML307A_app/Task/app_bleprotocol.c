@@ -248,15 +248,8 @@ void bleSendDataReqClear(uint8_t ind, uint32_t req)
 {
 	deviceConnInfo_s *devinfo;
 	devinfo = bleDevGetInfoByIndex(ind);
-	if (devinfo->discState == BLE_DISC_STATE_COMP && devinfo->use)
-	{
-		devinfo->dataEvent &= ~req;
-		LogPrintf(DEBUG_BLE, "$$ bleSendDataReqClear[%d]==>0x%x", ind, req);
-	}
-	else
-	{
-		LogPrintf(DEBUG_BLE, "$$ bleSendDataReqClear==>error, use:%d, status:%d", devinfo->use, devinfo->discState);
-	}
+	devinfo->dataEvent &= ~req;
+	LogPrintf(DEBUG_BLE, "$$ bleSendDataReqClear[%d]==>0x%x", ind, req);
 }
 
 /**************************************************
@@ -329,12 +322,6 @@ void bleProtocolSendEventTask(void)
 			bleSendProtocol(devinfo->connHandle, devinfo->charHandle, CMD_DEV_LOGIN_INFO, param, 0);
 			return;
 		}
-		if (devinfo->dataEvent & BLE_SEND_HBT_EVNET)
-		{
-			LogMessage(DEBUG_BLE, "try to get pet hbt info");
-			bleSendProtocol(devinfo->connHandle, devinfo->charHandle, CMD_DEV_HEARTBEAT, param, 0);
-			return;
-		}
 		if (devinfo->dataEvent & BLE_SEND_MASTERINFO_EVENT)
 		{
 			LogMessage(DEBUG_BLE, "try to send master info");
@@ -348,9 +335,15 @@ void bleProtocolSendEventTask(void)
 				param[16] = 0;
 			}
 			bleSendProtocol(devinfo->connHandle, devinfo->charHandle, CMD_DEV_MASTER_INFO, param, strlen(param));
-			
 			return;
 		}
+		if (devinfo->dataEvent & BLE_SEND_HBT_EVNET)
+		{
+			LogMessage(DEBUG_BLE, "try to get pet hbt info");
+			bleSendProtocol(devinfo->connHandle, devinfo->charHandle, CMD_DEV_HEARTBEAT, param, 0);
+			return;
+		}
+
 	}
 	ind = (ind + 1) % DEVICE_MAX_CONNECT_COUNT;
 }

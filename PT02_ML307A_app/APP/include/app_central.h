@@ -59,7 +59,6 @@ typedef struct
     uint8_t notifyDone      :1;
     uint8_t use             :1;
     uint8_t connPermit		:1;
-    uint8_t lost			:1;
     uint8_t sockSuccess		:1;
     uint8_t addr[6];
     uint8_t addrType;
@@ -73,7 +72,7 @@ typedef struct
     uint16_t endHandle;
     uint16_t charHandle;
     uint16_t notifyHandle;
-
+	uint8_t  timeoutcnt;
     uint32_t dataEvent;
     uint32_t updateTick;	//更新时间
     devSocketData_s sockData;
@@ -102,7 +101,7 @@ typedef enum
     BLE_SCHEDULE_IDLE,
     BLE_SCHEDULE_WAIT,
     BLE_SCHEDULE_DONE,
-    BLE_SCHEDULE_NONET,
+    BLE_SCHEDULE_ERRWAIT,
 } bleFsm;
 
 typedef enum
@@ -125,7 +124,7 @@ typedef enum
 extern tmosTaskID bleCentralTaskId;
 void bleCentralInit(void);
 void bleCentralStartDiscover(void);
-void bleCentralStartConnect(uint8_t *addr, uint8_t addrType);
+bStatus_t bleCentralStartConnect(uint8_t *addr, uint8_t addrType);
 void bleCentralDisconnect(uint16_t connHandle);
 uint8 bleCentralSend(uint16_t connHandle, uint16 attrHandle, uint8 *data, uint8 len);
 void bleDevTerminate(void);

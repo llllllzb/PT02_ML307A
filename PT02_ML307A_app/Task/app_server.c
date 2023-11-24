@@ -773,9 +773,10 @@ void jt808ServerConnTask(void)
 /**
  * 蓝牙-4G总体连接逻辑
  * 蓝牙先扫描，把扫到的PT13（最多2个）加入到连接列表，连接列表满了，停止扫描工作（要考虑链接的过程中一直在扫描会不会影响蓝牙链接的稳定性）
- * 蓝牙链接列表有目标设备之后，就去连接，连接成功便获取数据，中间断连会一直重连，直到3分钟后仍无法获取数据，就将该设备移出连接列表并重新扫描
- * 蓝牙获取数据成功后加入链路管理。中间sock链路断开一直重连就好，除非蓝牙连接列表把该设备删除
- * 
+ * 蓝牙链接列表有目标设备之后，就去连接，如果连续3次连接超时，清出蓝牙连接列表，重新扫描
+ * 蓝牙连接成功便获取数据，中间断连会一直重连，直到3分钟后仍无法获取数据，就将该设备移出连接列表并重新扫描
+ * 蓝牙获取数据成功后加入socket链路管理。中间sock链路断开一直重连就好，除非蓝牙连接列表把该设备删除
+ * 蓝牙连接列表删除，对应的socket也要删除
  */
 
 
@@ -1174,6 +1175,7 @@ void blePetServerConnTask(void)
 	                protocolInfoResiter(blePetServConn[i].batlevel, sysinfo.outsidevoltage > 5.0 ? sysinfo.outsidevoltage : blePetServConn[i].vol,
 	                                    dynamicParam.startUpCnt, blePetServConn[i].step);
 	                protocolSend(BleSockId(i), PROTOCOL_13, NULL);
+	                protocolSend(BleSockId(i), PROTOCOL_12, getLastFixedGPSInfo());
 	            }
 	            blePetServConn[i].heartbeattick++;
 	            break;

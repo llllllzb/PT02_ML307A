@@ -1165,8 +1165,6 @@ static void protoclparase80(uint8_t link, char *protocol, int size)
     deviceConnInfo_s *devinfo;
     uint8_t *instruction;
     uint8_t instructionlen;
-    char encrypt[256] = { 0 };
-    unsigned char encryptLen;
     instructionid[0] = protocol[5];
     instructionid[1] = protocol[6];
     instructionid[2] = protocol[7];
@@ -1182,25 +1180,50 @@ static void protoclparase80(uint8_t link, char *protocol, int size)
     }
     else if (link == BLE1_LINK)
     {
-        /* 直接把指令内容发给pt13 */
-        devinfo = bleDevGetInfoBySockid(BLE1_LINK);
-        if (devinfo != NULL)
-        {
-			getBle1Insid();
-        	bleCentralSend(devinfo->connHandle, devinfo->charHandle,instruction, instructionlen);
-        }
-		LogPrintf(DEBUG_ALL, "protoclparase80==>link:%d conhandle:%d", link, devinfo->connHandle);
-
+    	ITEM item;
+	    int16_t cmdid;
+	    stringToItem(&item, instruction, instructionlen);
+	    strToUppper(item.item_data[0], strlen(item.item_data[0]));
+	    cmdid = getInstructionid((uint8_t *)item.item_data[0]);
+	    if (cmdid == POSITION_INS)
+	    {
+	    	/* 如果是123指令，不用发给PT13 */
+			doinstruction(cmdid, &item, NET_MODE, &insparam);
+	    }
+	    else
+	    {
+	        /* 直接把指令内容发给pt13 */
+	        devinfo = bleDevGetInfoBySockid(BLE1_LINK);
+	        if (devinfo != NULL)
+	        {
+				getBle1Insid();
+	        	bleCentralSend(devinfo->connHandle, devinfo->charHandle,instruction, instructionlen);
+	        }
+			LogPrintf(DEBUG_BLE, "protoclparase80==>link:%d conhandle:%d", link, devinfo->connHandle);
+		}
     }
     else if (link == BLE2_LINK)
     {
-    	devinfo = bleDevGetInfoBySockid(BLE2_LINK);
-    	if (devinfo != NULL)
-    	{
-			getBle2Insid();
-	        bleCentralSend(devinfo->connHandle, devinfo->charHandle, instruction, instructionlen);
+    	ITEM item;
+	    int16_t cmdid;
+	    stringToItem(&item, instruction, instructionlen);
+	    strToUppper(item.item_data[0], strlen(item.item_data[0]));
+	    cmdid = getInstructionid((uint8_t *)item.item_data[0]);
+	    if (cmdid == POSITION_INS)
+	    {
+	    	/* 如果是123指令，不用发给PT13 */
+			doinstruction(cmdid, &item, NET_MODE, &insparam);
+	    }
+	    else
+	    {
+	    	devinfo = bleDevGetInfoBySockid(BLE2_LINK);
+	    	if (devinfo != NULL)
+	    	{
+				getBle2Insid();
+		        bleCentralSend(devinfo->connHandle, devinfo->charHandle, instruction, instructionlen);
+	        }
+	        LogPrintf(DEBUG_BLE, "protoclparase80==>link:%d conhandle:%d", link, devinfo->connHandle);
         }
-        LogPrintf(DEBUG_ALL, "protoclparase80==>link:%d conhandle:%d", link, devinfo->connHandle);
     }
     
 }

@@ -16,10 +16,10 @@ Task/app_atcmd.o: ../Task/app_atcmd.c \
  ../StdPeriphDriver/inc/CH58x_usbhost.h ../StdPeriphDriver/inc/ISP583.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_gps.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_instructioncmd.h \
+ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_kernal.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_mir3da.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_port.h \
- R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_param.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_net.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_param.h \
@@ -83,13 +83,13 @@ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_gps.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_instructioncmd.h:
 
+R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h:
+
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_kernal.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_mir3da.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_port.h:
-
-R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_param.h:
 

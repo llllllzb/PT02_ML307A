@@ -17,9 +17,9 @@ Task/app_net.o: ../Task/app_net.c \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_db.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_gps.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_instructioncmd.h \
+ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_kernal.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_param.h \
- R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_task.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_server.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\APP\include/app_central.h \
@@ -80,11 +80,11 @@ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_gps.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_instructioncmd.h:
 
+R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h:
+
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_kernal.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_param.h:
-
-R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_task.h:
 

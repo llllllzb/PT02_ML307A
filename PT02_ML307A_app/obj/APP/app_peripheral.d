@@ -14,12 +14,12 @@ APP/app_peripheral.o: ../APP/app_peripheral.c \
  ../StdPeriphDriver/inc/CH58x_usbhost.h ../StdPeriphDriver/inc/ISP583.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/aes.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_instructioncmd.h \
+ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_port.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_server.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\APP\include/app_central.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_protocol.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_param.h \
- R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_encrypt.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_jt808.h \
  R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_protocol.h \
@@ -71,6 +71,8 @@ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/aes.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_instructioncmd.h:
 
+R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h:
+
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_port.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_server.h:
@@ -80,8 +82,6 @@ R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\APP\include/app_central.h:
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_protocol.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_param.h:
-
-R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_sys.h:
 
 R:\CODE\CHcode\CH582\PT02_ML307A\PT02_ML307A_app\Task\inc/app_encrypt.h:
 

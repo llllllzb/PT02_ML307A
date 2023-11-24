@@ -15,6 +15,9 @@ static deviceConnInfo_s devInfoList[DEVICE_MAX_CONNECT_COUNT];
 static bleScheduleInfo_s bleSchedule;
 static deviceScanList_s scanList;
 
+static uint8_t ble_scaning = 0;
+static uint8_t ble_conning = 0;
+
 
 //函数声明
 static tmosEvents bleCentralTaskEventProcess(tmosTaskID taskID, tmosEvents event);
@@ -257,6 +260,14 @@ static void gattMessageHandler(gattMsgEvent_t *pMsgEvt)
 					{
 						insparam.data = pData;
 		        		insparam.len = dataLen;	
+		        		if (socketid == BLE1_LINK)
+		        		{
+							setBle1InsId();
+		        		}
+		        		else if (socketid == BLE2_LINK)
+		        		{
+							setBle2InsId();					
+		        		}
 		        		protocolSend(socketid, PROTOCOL_21, &insparam);
 	        		}
 				}
@@ -464,6 +475,7 @@ void linkTerminatedEventHandler(gapTerminateLinkEvent_t *pEvent)
 {
     LogPrintf(DEBUG_BLE, "Device disconnect,Handle [%d],Reason [0x%02X]", pEvent->connectionHandle, pEvent->reason);
     bleDevDisconnect(pEvent->connectionHandle);
+    ble_conning = 0;
 }
 
 /**************************************************
@@ -512,6 +524,7 @@ static void bleCentralEventCallBack(gapRoleEvent_t *pEvent)
             LogPrintf(DEBUG_BLE, "bleCentral discovery done!");
             gapDeviceDiscoveryEvent(&scanList);
             tmos_memset(&scanList, 0 ,sizeof(deviceScanList_s));
+            ble_scaning = 0;
             break;
         case GAP_ADV_DATA_UPDATE_DONE_EVENT:
             break;
@@ -598,9 +611,25 @@ void bleCentralStartDiscover(void)
     bStatus_t status;
     status = GAPRole_CentralStartDiscovery(DEVDISC_MODE_ALL, TRUE, FALSE);
     LogPrintf(DEBUG_BLE, "Start discovery,ret=0x%02X", status);
+    ble_scaning = 1;
     /* 清空 */
-    
 }
+
+/**************************************************
+@bref       停止扫描
+@param
+@return
+@note
+**************************************************/
+
+void bleCentralCancelDiscover(void)
+{
+	bStatus_t status;
+	status = GAPRole_CentralCancelDiscovery();
+	LogPrintf(DEBUG_BLE, "Cancel discovery,ret=0x%02X", status);
+	ble_scaning = 0;
+}
+
 /**************************************************
 @bref       主动链接从机
 @param
@@ -610,7 +639,7 @@ void bleCentralStartDiscover(void)
 @note
 **************************************************/
 
-void bleCentralStartConnect(uint8_t *addr, uint8_t addrType)
+bStatus_t bleCentralStartConnect(uint8_t *addr, uint8_t addrType)
 {
     char debug[13];
     bStatus_t status;
@@ -618,15 +647,17 @@ void bleCentralStartConnect(uint8_t *addr, uint8_t addrType)
     debug[12] = 0;
     status = GAPRole_CentralEstablishLink(FALSE, FALSE, addrType, addr);
     LogPrintf(DEBUG_BLE, "Start connect [%s](%d),ret=0x%02X", debug, addrType, status);
-    if (status != SUCCESS)
+    if (status == bleNotReady)
+    {
+    	LogMessage(DEBUG_BLE, "ble not ready to perform task");
+    }
+    else if (status != SUCCESS)
     {
         LogMessage(DEBUG_BLE, "Terminate link");
         GAPRole_TerminateLink(INVALID_CONNHANDLE);
     }
-    else if (status == bleAlreadyInRequestedMode)
-    {
-		
-    }
+    return status;
+
 }
 /**************************************************
 @bref       主动断开与从机的链接
@@ -699,6 +730,7 @@ static void bleDevConnInit(void)
 @return
 @note
 **************************************************/
+
 int8_t bleDevSearchSameBle(uint8_t *addr)
 {
 	int8_t i;
@@ -827,6 +859,7 @@ static void bleDevConnSuccess(uint8_t *addr, uint16_t connHandle)
                 devInfoList[i].findCharDone = 0;
                 devInfoList[i].notifyDone = 0;
                 devInfoList[i].periodTick = 0;
+                devInfoList[i].timeoutcnt = 0;
                 LogPrintf(DEBUG_BLE, "Get device conn handle [%d]", connHandle);
                 tmos_start_task(bleCentralTaskId, BLE_TASK_SVC_DISCOVERY_EVENT, MS1_TO_SYSTEM_TIME(100));
                 return;
@@ -869,7 +902,7 @@ static void bleDevDisconnect(uint16_t connHandle)
             debug[12] = 0;
             LogPrintf(DEBUG_BLE, "Device [%s] disconnect,Handle[%d]", debug, connHandle);
             bleSendDataReqClear(i, BLE_SEND_ALL_EVENT);	//断开要清除发送请求
-            bleSchduleChangeFsm(BLE_SCHEDULE_IDLE);
+            //bleSchduleChangeFsm(BLE_SCHEDULE_IDLE);
             return;
         }
     }
@@ -1116,6 +1149,7 @@ static uint8_t bleDevEnableNotify(void)
                 devInfoList[i].notifyDone = 1;
                 devInfoList[i].discState  = BLE_DISC_STATE_COMP;
             }
+            ble_conning = 0;
             bleSendDataReqSet(i, BLE_SEND_LOGININFO_EVENT | BLE_SEND_HBT_EVNET);
             return status;
         }
@@ -1291,15 +1325,7 @@ deviceConnInfo_s *bleDevGetInfoByHandle(uint16_t handle)
 
 deviceConnInfo_s *bleDevGetInfoByIndex(uint8_t index)
 {
-	uint8_t i;
-	for (i = 0; i < DEVICE_MAX_CONNECT_COUNT; i++)
-	{
-		if (devInfoList[i].use)
-		{
-			return &devInfoList[i];
-		}
-	}
-	return NULL;
+	return &devInfoList[index];
 }
 
 
@@ -1537,7 +1563,7 @@ void bleDisconnDetect(void)
 	{
 		if (devInfoList[i].use)
 		{
-			LogPrintf(DEBUG_ALL, "ble update tick:%d", devInfoList[i].updateTick);
+			LogPrintf(DEBUG_ALL, "ble update tick:%d", sysinfo.sysTick - devInfoList[i].updateTick);
 			if (sysinfo.sysTick - devInfoList[i].updateTick >= 180)
 			{
 				LogPrintf(DEBUG_ALL, "ble lost tick:%d ,systick:%d", devInfoList[i].updateTick, sysinfo.sysTick);
@@ -1572,10 +1598,8 @@ static void bleSchduleChangeFsm(bleFsm nfsm)
 static void bleScheduleTask(void)
 {
     static uint8_t ind = 0;
-    
-	bleDevScanProcess();
+    uint8_t ret;
 	bleDisconnDetect();
-
     switch (bleSchedule.fsm)
     {
     	case BLE_SCHEDULE_IDLE:
@@ -1585,11 +1609,21 @@ static void bleScheduleTask(void)
 			{
 				if (devInfoList[ind].use && 
 					devInfoList[ind].connHandle == INVALID_CONNHANDLE && 
-					devInfoList[ind].discState  == BLE_DISC_STATE_IDLE /*&&
-					devInfoList[ind].connPermit == 1*/)
+					devInfoList[ind].discState  == BLE_DISC_STATE_IDLE && 
+					ble_scaning == 0
+					/*&& devInfoList[ind].connPermit == 1*/)
 				{
-					bleCentralStartConnect(devInfoList[ind].addr, devInfoList[ind].addrType);
-					bleSchduleChangeFsm(BLE_SCHEDULE_WAIT);
+					ret = bleCentralStartConnect(devInfoList[ind].addr, devInfoList[ind].addrType);
+					if (ret == SUCCESS)
+					{
+						bleSchduleChangeFsm(BLE_SCHEDULE_WAIT);
+						ble_conning = 1;
+					}
+					else if (ret == bleNotReady)
+					{
+						bleSchduleChangeFsm(BLE_SCHEDULE_ERRWAIT);
+					}
+					
 					break;
 				}
 			}
@@ -1601,6 +1635,12 @@ static void bleScheduleTask(void)
                 LogPrintf(DEBUG_BLE, "bleSchedule==>timeout!!!");
                 bleCentralDisconnect(devInfoList[ind].connHandle);
                 bleSchduleChangeFsm(BLE_SCHEDULE_DONE);
+                devInfoList[ind].timeoutcnt++;
+                if (devInfoList[ind].timeoutcnt >= 3)
+                {
+					bleDevConnDel(devInfoList[ind].addr);
+					devInfoList[ind].timeoutcnt = 0;
+                }
                 if (sysinfo.logLevel == 4)
                 {
                     LogMessage(DEBUG_FACTORY, "+FMPC:BLE CONNECT FAIL");
@@ -1614,11 +1654,18 @@ static void bleScheduleTask(void)
             ind++;
             bleSchduleChangeFsm(BLE_SCHEDULE_IDLE);
             break;
+        case BLE_SCHEDULE_ERRWAIT:
+			if (bleSchedule.runTick >= 5)
+			{
+				bleSchduleChangeFsm(BLE_SCHEDULE_DONE);
+			}
+        	break;
         default:
             bleSchduleChangeFsm(BLE_SCHEDULE_IDLE);
             break;
     }
     bleSchedule.runTick++;
+    bleDevScanProcess();
 }
 
 
@@ -1647,12 +1694,17 @@ static void bleScanFsmChange(uint8_t fsm)
 
 uint8_t bleDevScanProcess(void)
 {
-	uint8_t result = 0;
+	if (bleDevGetBleMacCnt() && bleScanFsm != BLE_SCAN_IDLE)
+	{
+		bleCentralCancelDiscover();
+		bleScanFsm = BLE_SCAN_IDLE;
+		return 0;
+	}
 	switch (bleScanFsm)
 	{
 		case BLE_SCAN_IDLE:
 			/* 无绑定设备则开启扫描 */
-			if (bleDevGetBleMacCnt() == 0 && bleDevGetCnt() < DEVICE_MAX_CONNECT_COUNT)
+			if (bleDevGetBleMacCnt() == 0 && bleDevGetCnt() < DEVICE_MAX_CONNECT_COUNT && ble_conning == 0)
 			{
 				bleCentralStartDiscover();
 				bleScanFsmChange(BLE_SCAN_ING);

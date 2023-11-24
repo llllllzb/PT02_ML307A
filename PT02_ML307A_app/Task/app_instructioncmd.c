@@ -39,19 +39,9 @@ const instruction_s insCmdTable[] =
     {JT808SN_INS, "JT808SN"},
     {HIDESERVER_INS, "HIDESERVER"},
     {BLESERVER_INS, "BLESERVER"},
-    {RELAY_INS, "RELAY"},
-    {READPARAM_INS, "READPARAM"},
-    {SETBLEPARAM_INS, "SETBLEPARAM"},
-    {SETBLEWARNPARAM_INS, "SETBLEWARNPARAM"},
-    {SETBLEMAC_INS, "SETBLEMAC"},
-    {RELAYSPEED_INS, "RELAYSPEED"},
-    {RELAYFORCE_INS, "RELAYFORCE"},
     {BF_INS, "BF"},
     {CF_INS, "CF"},
     {PROTECTVOL_INS, "PROTECTVOL"},
-    {SOS_INS, "SOS"},
-    {CENTER_INS, "CENTER"},
-    {SOSALM_INS, "SOSALM"},
     {TIMER_INS, "TIMER"},
     {QGMR_INS, "QGMR"},
     {MOTIONDET_INS, "MOTIONDET"},
@@ -59,10 +49,10 @@ const instruction_s insCmdTable[] =
     {QFOTA_INS, "QFOTA"},
     {BLEEN_INS, "BLEEN"},
     {AGPSEN_INS, "AGPSEN"},
-    {BLERELAYCTL_INS, "BLERELAYCTL"},
-    {RELAYFUN_INS, "RELAYFUN"},
     {SETBATRATE_INS, "SETBATRATE"},
     {SETMILE_INS, "SETMILE"},
+    {SETPETMAC_INS, "SETPETMAC"},
+    {PETDEBUG_INS, "PETDEBUG"},
     {SN_INS, "*"},
 };
 
@@ -1006,172 +996,21 @@ static void doBleServerInstruction(ITEM *item, char *message)
     }
 }
 
-static void doRelayInstrucion(ITEM *item, char *message, insMode_e mode, void *param)
+static uint8_t macCnt = 0;
+static void setPetMacCallback(void)
 {
-//    if (item->item_data[1][0] == '1')
-//    {
-//        sysparam.relayCtl = 1;
-//        paramSaveAll();
-//        relayAutoRequest();
-//        lastmode = mode;
-//        if (rspTimeOut == -1)
-//        {
-//			rspTimeOut = startTimer(300, relayOnRspTimeOut, 0);
-//        }
-//        //strcpy(message, "Relay on success");
-//    }
-//    else if (item->item_data[1][0] == '0')
-//    {
-//        sysparam.relayCtl = 0;
-//        lastmode = mode;
-//        paramSaveAll();
-//        bleRelaySetAllReq(BLE_EVENT_SET_DEVOFF | BLE_EVENT_CLR_CNT);
-//        bleRelayClearAllReq(BLE_EVENT_SET_DEVON);
-//        if (rspTimeOut == -1)
-//        {
-//            rspTimeOut = startTimer(300, relayOffRspTimeOut, 0);
-//        }
-//        //strcpy(message, "Relay off success");
-//    }
-//    else
-//    {
-//        sprintf(message, "Relay status %s", sysparam.relayCtl == 1 ? "on" : "off");
-//        sendMsgWithMode((uint8_t *)message, strlen(message), mode, param);
-//    }
-//
+	for (uint8_t i = 0; i < macCnt; macCnt++)
+	{
+		bleDevConnAdd(sysparam.bleConnMac[i], 0);
+	}
+	macCnt = 0;
 }
 
-static void doReadParamInstruction(ITEM *item, char *message)
+static void doSetPetMacInstruction(ITEM *item, char *message)
 {
-//    uint8_t i, cnt;
-//    bleRelayInfo_s *bleinfo;
-//    cnt = 0;
-//    for (i = 0; i < BLE_CONNECT_LIST_SIZE; i++)
-//    {
-//        bleinfo = bleRelayGeInfo(i);
-//        if (bleinfo != NULL)
-//        {
-//            cnt++;
-//            sprintf(message + strlen(message), "[T:%ld,V:(%.2fV,%.2fV)] ", sysinfo.sysTick - bleinfo->updateTick, bleinfo->rfV,
-//                    bleinfo->outV);
-//        }
-//    }
-//    if (cnt == 0)
-//    {
-//        sprintf(message, "no ble info");
-//    }
-}
-static void doSetBleParamInstruction(ITEM *item, char *message)
-{
-//    uint8_t i, cnt;
-//    bleRelayInfo_s *bleinfo;
-//    if (item->item_data[1][0] == 0 || item->item_data[1][0] == '?')
-//    {
-//        cnt = 0;
-//
-//        for (i = 0; i < BLE_CONNECT_LIST_SIZE; i++)
-//        {
-//            bleinfo = bleRelayGeInfo(i);
-//            if (bleinfo != NULL)
-//            {
-//                cnt++;
-//                sprintf(message + strlen(message), "(%d:[%.2f,%.2f,%d]) ", i, bleinfo->rf_threshold, bleinfo->out_threshold,
-//                        bleinfo->disc_threshold);
-//            }
-//        }
-//        if (cnt == 0)
-//        {
-//            sprintf(message, "no ble info");
-//        }
-//        else
-//        {
-//            sprintf(message + strlen(message), "DISC:%dm", sysparam.bleAutoDisc);
-//        }
-//    }
-//    else
-//    {
-//        for (i = 0; i < BLE_CONNECT_LIST_SIZE; i++)
-//        {
-//            bleinfo = bleRelayGeInfo(i);
-//            if (bleinfo != NULL)
-//            {
-//                bleinfo->rf_threshold = 0;
-//                bleinfo->out_threshold = 0;
-//            }
-//        }
-//        sysparam.bleRfThreshold = atoi(item->item_data[1]);
-//        sysparam.bleOutThreshold = atoi(item->item_data[2]);
-//        sysparam.bleAutoDisc = atoi(item->item_data[3]);
-//        paramSaveAll();
-//        sprintf(message, "Update new ble param to %.2fv,%.2fv,%d", sysparam.bleRfThreshold / 100.0,
-//                sysparam.bleOutThreshold / 100.0, sysparam.bleAutoDisc);
-//        bleRelaySetAllReq(BLE_EVENT_SET_RF_THRE | BLE_EVENT_SET_OUTV_THRE | BLE_EVENT_SET_AD_THRE | BLE_EVENT_GET_RF_THRE |
-//                          BLE_EVENT_GET_OUT_THRE | BLE_EVENT_GET_AD_THRE);
-//    }
-}
-static void doSetBleWarnParamInstruction(ITEM *item, char *message)
-{
-//    uint8_t i, cnt;
-//    bleRelayInfo_s *bleinfo;
-//
-//    if (item->item_data[1][0] == 0 || item->item_data[1][0] == '?')
-//    {
-//        cnt = 0;
-//        for (i = 0; i < BLE_CONNECT_LIST_SIZE; i++)
-//        {
-//            bleinfo = bleRelayGeInfo(i);
-//            if (bleinfo != NULL)
-//            {
-//                cnt++;
-//                sprintf(message + strlen(message), "(%d:[%.2f,%d,%d]) ", i, bleinfo->preV_threshold / 100.0,
-//                        bleinfo->preDetCnt_threshold,
-//                        bleinfo->preHold_threshold);
-//            }
-//        }
-//        if (cnt == 0)
-//        {
-//            sprintf(message, "no ble info");
-//        }
-//    }
-//    else
-//    {
-//        sysparam.blePreShieldVoltage = atoi(item->item_data[1]);
-//        sysparam.blePreShieldDetCnt = atoi(item->item_data[2]);
-//        sysparam.blePreShieldHoldTime = atoi(item->item_data[3]);
-//        if (sysparam.blePreShieldDetCnt >= 60)
-//        {
-//            sysparam.blePreShieldDetCnt = 30;
-//        }
-//        else if (sysparam.blePreShieldDetCnt == 0)
-//        {
-//            sysparam.blePreShieldDetCnt = 10;
-//        }
-//        if (sysparam.blePreShieldHoldTime == 0)
-//        {
-//            sysparam.blePreShieldHoldTime = 1;
-//        }
-//        paramSaveAll();
-//        sprintf(message, "Update ble warnning param to %d,%d,%d", sysparam.blePreShieldVoltage, sysparam.blePreShieldDetCnt,
-//                sysparam.blePreShieldHoldTime);
-//        for (i = 0; i < BLE_CONNECT_LIST_SIZE; i++)
-//        {
-//            bleinfo = bleRelayGeInfo(i);
-//            if (bleinfo != NULL)
-//            {
-//                bleinfo->preV_threshold = 0;
-//                bleinfo->preDetCnt_threshold = 0;
-//                bleinfo->preHold_threshold = 0;
-//            }
-//        }
-//        bleRelaySetAllReq(BLE_EVENT_SET_PRE_PARAM | BLE_EVENT_GET_PRE_PARAM);
-//    }
-}
-
-static void doSetBleMacInstruction(ITEM *item, char *message)
-{
-    uint8_t i, j, l, ind;
-    char mac[20];
-    char mac2[20];
+    uint8_t i, j, l;
+    char mac[20] = { 0 };
+    char mac2[20] = { 0 };
     if (item->item_data[1][0] == 0 || item->item_data[1][0] == '?')
     {
         strcpy(message, "BLELIST:");
@@ -1195,9 +1034,9 @@ static void doSetBleMacInstruction(ITEM *item, char *message)
     }
     else
     {
-        //bleRelayDeleteAll();
+        bleDevConnDelAll();
         tmos_memset(sysparam.bleConnMac, 0, sizeof(sysparam.bleConnMac));
-        ind = 0;
+        macCnt = 0;
         strcpy(message, "Enable ble function,Update MAC: ");
         for (i = 1; i < item->item_cnt; i++)
         {
@@ -1205,14 +1044,6 @@ static void doSetBleMacInstruction(ITEM *item, char *message)
             {
                 continue;
             }
-            //aa bb cc dd ee ff
-            //ff ee dd cc bb aa
-//            if (ind < 2)
-//            {
-//                changeHexStringToByteArray(sysparam.bleConnMac[ind], item->item_data[i], 6);
-//                bleRelayInsert(sysparam.bleConnMac[ind], 0);
-//                ind++;
-//            }
 
             l = 0;
             for (j = 0; j < 12; j += 2)
@@ -1235,31 +1066,24 @@ static void doSetBleMacInstruction(ITEM *item, char *message)
                 tmos_memcpy(&item->item_data[i][l * 2], mac, 2);
                 l--;
             }
-            if (ind < 2)
+            if (macCnt < 2)
             {
-                changeHexStringToByteArray(sysparam.bleConnMac[ind], item->item_data[i], 6);
-                //bleRelayInsert(sysparam.bleConnMac[ind], 0);
-                ind++;
+                changeHexStringToByteArray(sysparam.bleConnMac[macCnt], item->item_data[i], 6);
+                macCnt++;
             }
         }
         paramSaveAll();
-        if (ind == 0)
+        if (macCnt == 0)
         {
             strcpy(message, "Disable the ble function,and the ble mac was clear");
+        }
+        else
+        {
+			startTimer(20, setPetMacCallback, 0);
         }
     }
 }
 
-static void doRelaySpeedInstruction(ITEM *item, char *message)
-{
-
-}
-
-
-static void doRelayForceInstrucion(ITEM *item, char *message)
-{
-
-}
 
 void doBFInstruction(ITEM *item, char *message)
 {
@@ -1328,21 +1152,6 @@ void doTimerInstrucion(ITEM *item, char *message)
         }
         paramSaveAll();
     }
-}
-
-void doSOSInstruction(ITEM *item, char *messages, insMode_e mode, void *param)
-{
-
-}
-
-void doCenterInstruction(ITEM *item, char *messages, insMode_e mode, void *param)
-{
-
-}
-
-void doSosAlmInstruction(ITEM *item, char *message)
-{
-
 }
 
 static void doQgmrInstruction(ITEM *item, char *message)
@@ -1453,16 +1262,6 @@ static void doAgpsenInstrution(ITEM *item, char *message)
 	}
 }
 
-static void doBleRelayCtlInstruction(ITEM *item, char *message)
-{
-
-	
-}
-
-static void doRelayFunInstruction(ITEM *item, char *message)
-{
-
-}
 
 static void doSetBatRateInstruction(ITEM *item, char *message)
 {
@@ -1495,8 +1294,20 @@ static void doSetmileInstruction(ITEM *item, char *message)
 		sprintf(message, "Update mileage to %.2lf km, milecal is %d%%", sysparam.mileage / 1000, sysparam.milecal);
     }
 }
+
+static void doPetDebugInstruction(ITEM *item, char *message)
+{
+	deviceConnInfo_s *devInfo;
+	devInfo = bleDevGetInfoAll();
+	sprintf(message, "dev[0]use:%d dev[1]use:%d ", devInfo[0].use, devInfo[1].use);
+	sprintf(message + strlen(message), "dev[0]discState:%d dev[1]discState:%d ", devInfo[0].discState, devInfo[1].discState);
+	sprintf(message + strlen(message), "dev[0]socksuccess:%d dev[1]socksuccess:%d ", devInfo[0].sockSuccess, devInfo[1].sockSuccess);
+	sprintf(message + strlen(message), "dev[0]Msn:%s dev[1]Msn:%s", devInfo[0].sockData.SN, devInfo[1].sockData.SN);
+	sprintf(message + strlen(message), "dev[0]periodTick:%d dev[1]periodTick:%d ", devInfo[0].periodTick, devInfo[1].periodTick);
+}
+
 /*--------------------------------------------------------------------------------------*/
-static void doinstruction(int16_t cmdid, ITEM *item, insMode_e mode, void *param)
+void doinstruction(int16_t cmdid, ITEM *item, insMode_e mode, void *param)
 {
     char message[512];
     message[0] = 0;
@@ -1578,33 +1389,6 @@ static void doinstruction(int16_t cmdid, ITEM *item, insMode_e mode, void *param
         case BLESERVER_INS:
             doBleServerInstruction(item, message);
             break;
-        case RELAY_INS:
-        	if (param != NULL)
-        	{
-	           	debugparam = (insParam_s *)param;
-	           	lastparam.link = debugparam->link;
-           	}
-           	getLastInsid();
-           	doRelayInstrucion(item, message, mode, param);
-           	break;
-        case READPARAM_INS:
-           	doReadParamInstruction(item, message);
-           	break;
-        case SETBLEPARAM_INS:
-           	doSetBleParamInstruction(item, message);
-           	break;
-        case SETBLEWARNPARAM_INS:
-           	doSetBleWarnParamInstruction(item, message);
-           	break;
-        case SETBLEMAC_INS:
-           	doSetBleMacInstruction(item, message);
-           	break;
-        case RELAYSPEED_INS:
-           	doRelaySpeedInstruction(item, message);
-           	break;
-        case RELAYFORCE_INS:
-           	doRelayForceInstrucion(item, message);
-           	break;
         case BF_INS:
            	doBFInstruction(item, message);
            	break;
@@ -1616,15 +1400,6 @@ static void doinstruction(int16_t cmdid, ITEM *item, insMode_e mode, void *param
            	break;
         case TIMER_INS:
             doTimerInstrucion(item, message);
-            break;
-        case SOS_INS:
-            doSOSInstruction(item, message, mode, param);
-            break;
-        case CENTER_INS:
-            doCenterInstruction(item, message, mode, param);
-            break;
-        case SOSALM_INS:
-            doSosAlmInstruction(item, message);
             break;
         case QGMR_INS:
             doQgmrInstruction(item, message);
@@ -1644,18 +1419,19 @@ static void doinstruction(int16_t cmdid, ITEM *item, insMode_e mode, void *param
        	case AGPSEN_INS:
        		doAgpsenInstrution(item, message);
        		break;
-       	case BLERELAYCTL_INS:
-       		doBleRelayCtlInstruction(item, message);
-       		break;
-       	case RELAYFUN_INS:
-       		doRelayFunInstruction(item, message);
-       		break;
         case SETBATRATE_INS:
             doSetBatRateInstruction(item, message);
             break;
         case SETMILE_INS:
 			doSetmileInstruction(item, message);
-        	break;        default:
+        	break; 
+       	case SETPETMAC_INS:
+			doSetPetMacInstruction(item, message);
+       		break;
+       	case PETDEBUG_INS:
+			doPetDebugInstruction(item, message);
+       		break;
+       	default:
             if (mode == SMS_MODE)
             {
                 deleteAllMessage();
@@ -1664,13 +1440,14 @@ static void doinstruction(int16_t cmdid, ITEM *item, insMode_e mode, void *param
             snprintf(message, 50, "Unsupport CMD:%s;", item->item_data[0]);
             break;
     }
-	if (cmdid != RELAY_INS)
+	
+	if (cmdid != POSITION_INS)
 	{
     	sendMsgWithMode((uint8_t *)message, strlen(message), mode, param);
     }
 }
 
-static int16_t getInstructionid(uint8_t *cmdstr)
+int16_t getInstructionid(uint8_t *cmdstr)
 {
     uint16_t i = 0;
     for (i = 0; i < sizeof(insCmdTable) / sizeof(insCmdTable[0]); i++)

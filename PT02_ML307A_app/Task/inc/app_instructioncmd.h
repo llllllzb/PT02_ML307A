@@ -2,7 +2,7 @@
 #define APP_INSTRUCTION_H
 
 #include <stdint.h>
-
+#include "app_sys.h"
 
 typedef enum{
 	DEBUG_MODE,
@@ -38,30 +38,20 @@ typedef enum{
 	JT808SN_INS,
 	HIDESERVER_INS,
 	BLESERVER_INS,
-    RELAY_INS,
-    READPARAM_INS,
-    SETBLEPARAM_INS,
-    SETBLEWARNPARAM_INS,
-    SETBLEMAC_INS,
-    RELAYSPEED_INS,
-    RELAYFORCE_INS,
     BF_INS,
     CF_INS,
     PROTECTVOL_INS,
     TIMER_INS,
-    SOS_INS,
-    CENTER_INS,
-    SOSALM_INS,
     QGMR_INS,
     MOTIONDET_INS,
     FCG_INS,
     QFOTA_INS,
     BLEEN_INS,
     AGPSEN_INS,
-    BLERELAYCTL_INS,
-    RELAYFUN_INS,
     SETBATRATE_INS,
     SETMILE_INS,
+    SETPETMAC_INS,
+    PETDEBUG_INS,
 }INSTRUCTIONID;
 
 
@@ -83,5 +73,6 @@ extern insParam_s lastparam;
 void instructionRespone(char *message);
 void instructionParser(uint8_t *str, uint16_t len, insMode_e mode, void * param);
 void dorequestSend123(void);
-
+int16_t getInstructionid(uint8_t *cmdstr);
+void doinstruction(int16_t cmdid, ITEM *item, insMode_e mode, void *param);
 #endif
