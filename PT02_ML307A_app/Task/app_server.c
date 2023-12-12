@@ -826,6 +826,7 @@ int8_t blePetSearchIdleServer(void)
 @param
 @return
 @note
+!!!		返回的是链路id
 **************************************************/
 
 int8_t blePetSearchServerSn(char *Sn)
@@ -835,11 +836,13 @@ int8_t blePetSearchServerSn(char *Sn)
 	{
 		if (strncmp(blePetServConn[i].loginSn, Sn, 15) == 0 && blePetServConn[i].use)
 		{
-			return BleSockId(i);
+			return i;
 		}
 	}
 	return -1;
 }
+
+
 
 /**************************************************
 @bref		添加蓝牙链路
@@ -925,11 +928,13 @@ int8_t blePetServerUploadUpdate(devSocketData_s *data)
 		LogPrintf(DEBUG_BLE, "blePetServerUploadUpdate==>No exist sn[%s]", data->SN);
 		return -1;
 	}
+	
 	blePetServConn[blePetSearchServerSn(data->SN)].batlevel = data->bat;
 	blePetServConn[blePetSearchServerSn(data->SN)].vol      = data->vol;
 	blePetServConn[blePetSearchServerSn(data->SN)].step		= data->step;
-	LogPrintf(DEBUG_BLE, "Blelink(%d)InfoRegister:vol:%f, bat:%d%%, step:%d", 
+	LogPrintf(DEBUG_BLE, "Dev(%d) sock(%d)InfoRegister:vol:%.1f, bat:%d%%, step:%d", 
 							blePetSearchServerSn(data->SN), 
+							BleSockId(blePetSearchServerSn(data->SN)),
 							blePetServConn[blePetSearchServerSn(data->SN)].vol,
 							blePetServConn[blePetSearchServerSn(data->SN)].batlevel,
 							blePetServConn[blePetSearchServerSn(data->SN)].step);
@@ -1133,21 +1138,21 @@ void blePetServerConnTask(void)
 			{
 				socketDel(BleSockId(i));
 			}
-			break;
+			continue;
 		}
 		if (socketGetUsedFlag(BleSockId(i)) == 0)
 		{
 			blePetChangeFsm(i, SERV_LOGIN);
 			blePetServConn[i].loginCount = 0;
 			socketAdd(BleSockId(i), sysparam.bleServer, sysparam.bleServerPort, BlePetSocketRecv(i));
-			break;
+			continue;
 		}
 		
 		if (socketGetConnStatus(BleSockId(i)) != SOCKET_CONN_SUCCESS)
 		{
 			LogPrintf(DEBUG_BLE, "wait blelink:%d server ready", BleSockId(i));
 			blePetChangeFsm(i, SERV_LOGIN);
-			break;
+			continue;
 		}
 		switch (blePetServConn[i].fsmstate)
 		{
@@ -1184,7 +1189,6 @@ void blePetServerConnTask(void)
 				blePetServConn[i].logintick = 0;
 	        	break;
 		}
-
 	}
 
 }

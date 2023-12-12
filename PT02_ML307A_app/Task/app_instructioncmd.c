@@ -761,8 +761,8 @@ void doDebugInstrucion(ITEM *item, char *message)
             sysinfo.gpsUpdatetick / 3600, sysinfo.gpsUpdatetick % 3600 / 60, sysinfo.gpsUpdatetick % 60);
     sprintf(message + strlen(message), "hideLogin:%s;", hiddenServerIsReady() ? "Yes" : "No");
     sprintf(message + strlen(message), "moduleRstCnt:%d;", sysinfo.moduleRstCnt);
-    sprintf(message + strlen(message), "bleserver use:%d %d login:%s %s", 
-						    			serverInfo[0].use, serverInfo[1].use, 
+    sprintf(message + strlen(message), "bleServer Use:%d %d Login:%s %s", 
+						    			 serverInfo[0].use, serverInfo[1].use, 
 						    			(serverInfo[0].fsmstate == SERV_READY)?"Yes":"No", 
 						    			(serverInfo[1].fsmstate == SERV_READY)?"Yes":"No");
 }

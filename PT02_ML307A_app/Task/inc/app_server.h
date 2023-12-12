@@ -97,7 +97,7 @@ int8_t blePetServerDel(char *Sn);
 int8_t blePetServerUploadUpdate(devSocketData_s *data);
 bleSocketInfo_s *getBlepetServerInfo(void);
 void blePetServerLoginSuccess(uint8_t index);
-
+uint8_t BleSockId(uint8_t i);
 
 
 void agpsRequestSet(void);

@@ -1428,4 +1428,6 @@ void protocolInfoResiter(uint8_t batLevel, float vol, uint16_t sCnt, uint16_t ru
     protocolInfo.Voltage = vol;
     protocolInfo.startUpcnt = sCnt;
     protocolInfo.runCnt = runCnt;
+    LogPrintf(DEBUG_BLE, "Register batlevel:%d Vol:%f ", protocolInfo.batLevel, protocolInfo.Voltage);
 }
+

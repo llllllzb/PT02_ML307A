@@ -11,6 +11,7 @@
 #include "app_socket.h"
 #include "app_param.h"
 
+
 /**************************************************
 @bref      	登录信息解析
 @param
@@ -37,7 +38,7 @@ static void devLoginInfoParser(uint8_t ind, char *sn, uint8_t connSuccess, char 
 		memcpy(bleinfo->sockData.SN, slavor, 15);
 		bleinfo->sockData.SN[15] = 0;
 		bleinfo->sockSuccess = 1;
-		bleinfo->socketId = blePetSearchServerSn(slavor);
+		bleinfo->socketId = BleSockId(blePetSearchServerSn(slavor));
 		bleSendDataReqSet(ind, BLE_SEND_MASTERINFO_EVENT);
 		LogPrintf(DEBUG_BLE, "$$ Ble get login info==>Exist server, Sn:[%s] Socketid:%d", bleinfo->sockData.SN, bleinfo->socketId);
 		return;
@@ -61,7 +62,7 @@ static void devLoginInfoParser(uint8_t ind, char *sn, uint8_t connSuccess, char 
 			/* 从server列表删除 */
 			blePetServerDel(slavor);
 			/* 从socket列表删除,可以不要 */
-			socketDel(blePetSearchServerSn(slavor));
+			socketDel(BleSockId(blePetSearchServerSn(slavor)));
 			/* 从blecon列表删除，可加可不加，加的话会一直重连 */
 
 			LogPrintf(DEBUG_BLE, "$$ Ble get login info==>Other link, LocolSn[%s] MasterSn:[%s] SlavorSn:[%s]", dynamicParam.SN, master, slavor);
@@ -211,7 +212,7 @@ void bleProtoclRecvParser(uint8_t connHandle, uint8_t *data, uint8_t len)
  						/* 从server列表删除 */
  						blePetServerDel(bleInfo->sockData.SN);
  						/* 从socket列表删除,可以不要 */
-						socketDel(blePetSearchServerSn(bleInfo->sockData.SN));
+						socketDel(BleSockId(blePetSearchServerSn(bleInfo->sockData.SN)));
 						/* 从blecon列表删除，可加可不加，加的话会一直重连 */
 						bleInfo->sockSuccess = 0;
  					}

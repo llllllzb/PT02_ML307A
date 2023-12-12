@@ -385,7 +385,7 @@ static tmosEvents bleCentralTaskEventProcess(tmosTaskID taskID, tmosEvents event
 static void deviceInfoEventHandler(gapDeviceInfoEvent_t *pEvent)
 {
     uint8 i, dataLen, cmd;
-    char debug[100];
+    char debug[100] = { 0 };
     deviceScanInfo_s scaninfo;
 
     byteToHexString(pEvent->addr, debug, B_ADDR_LEN);
@@ -647,11 +647,7 @@ bStatus_t bleCentralStartConnect(uint8_t *addr, uint8_t addrType)
     debug[12] = 0;
     status = GAPRole_CentralEstablishLink(FALSE, FALSE, addrType, addr);
     LogPrintf(DEBUG_BLE, "Start connect [%s](%d),ret=0x%02X", debug, addrType, status);
-    if (status == bleNotReady)
-    {
-    	LogMessage(DEBUG_BLE, "ble not ready to perform task");
-    }
-    else if (status != SUCCESS)
+   	if (status != SUCCESS)
     {
         LogMessage(DEBUG_BLE, "Terminate link");
         GAPRole_TerminateLink(INVALID_CONNHANDLE);
@@ -798,6 +794,7 @@ int8_t bleDevConnDel(uint8_t *addr)
         if (devInfoList[i].use && tmos_memcmp(addr, devInfoList[i].addr, 6) == TRUE)
         {
             devInfoList[i].use = 0;
+            LogPrintf(DEBUG_BLE, "bleDevConnDel==>(%d)ok", i);
             if (devInfoList[i].connHandle != INVALID_CONNHANDLE)
             {
                 bleCentralDisconnect(devInfoList[i].connHandle);
@@ -1472,7 +1469,7 @@ uint8_t bleDevGetBleMacCnt(void)
 	uint8_t i, cnt = 0;
 	for (i = 0; i < sizeof(sysparam.bleConnMac) / sizeof(sysparam.bleConnMac[0]); i++)
 	{
-		if (sysparam.bleConnMac[i][0] != 0)
+		if (strncmp(sysparam.bleConnMac[i], "000000000000", 6) == 0)
 		{
 			cnt++;
 		}
@@ -1563,10 +1560,10 @@ void bleDisconnDetect(void)
 	{
 		if (devInfoList[i].use)
 		{
-			LogPrintf(DEBUG_ALL, "ble update tick:%d", sysinfo.sysTick - devInfoList[i].updateTick);
+			LogPrintf(DEBUG_BLE, "dev(%d)update tick:%d", i, sysinfo.sysTick - devInfoList[i].updateTick);
 			if (sysinfo.sysTick - devInfoList[i].updateTick >= 180)
 			{
-				LogPrintf(DEBUG_ALL, "ble lost tick:%d ,systick:%d", devInfoList[i].updateTick, sysinfo.sysTick);
+				LogPrintf(DEBUG_BLE, "dev(%d)lost tick:%d ,systick:%d", i, devInfoList[i].updateTick, sysinfo.sysTick);
 				bleDevConnDel(devInfoList[i].addr);
 				blePetServerDel(devInfoList[i].sockData.SN);
 			}
@@ -1599,6 +1596,7 @@ static void bleScheduleTask(void)
 {
     static uint8_t ind = 0;
     uint8_t ret;
+    LogPrintf(DEBUG_BLE, "blestatus: conn:%d scan:%d", ble_conning, ble_scaning);
 	bleDisconnDetect();
     switch (bleSchedule.fsm)
     {
@@ -1619,11 +1617,10 @@ static void bleScheduleTask(void)
 						bleSchduleChangeFsm(BLE_SCHEDULE_WAIT);
 						ble_conning = 1;
 					}
-					else if (ret == bleNotReady)
+					else
 					{
 						bleSchduleChangeFsm(BLE_SCHEDULE_ERRWAIT);
 					}
-					
 					break;
 				}
 			}
@@ -1632,12 +1629,14 @@ static void bleScheduleTask(void)
             if (bleSchedule.runTick >= 15)
             {
                 //链接超时
+                ble_conning = 0;
                 LogPrintf(DEBUG_BLE, "bleSchedule==>timeout!!!");
                 bleCentralDisconnect(devInfoList[ind].connHandle);
                 bleSchduleChangeFsm(BLE_SCHEDULE_DONE);
                 devInfoList[ind].timeoutcnt++;
                 if (devInfoList[ind].timeoutcnt >= 3)
                 {
+                	LogPrintf(DEBUG_BLE, "Dev(%d) connect fail 3 times, delete it", ind);
 					bleDevConnDel(devInfoList[ind].addr);
 					devInfoList[ind].timeoutcnt = 0;
                 }
@@ -1668,7 +1667,6 @@ static void bleScheduleTask(void)
     bleDevScanProcess();
 }
 
-
 /**************************************************
 @bref       BLE连接状态机切换
 @param
@@ -1694,6 +1692,7 @@ static void bleScanFsmChange(uint8_t fsm)
 
 uint8_t bleDevScanProcess(void)
 {
+	/* 有绑定设备且正在扫描 */
 	if (bleDevGetBleMacCnt() && bleScanFsm != BLE_SCAN_IDLE)
 	{
 		bleCentralCancelDiscover();
@@ -1719,7 +1718,6 @@ uint8_t bleDevScanProcess(void)
 		case BLE_SCAN_DONE:
 	
 			break;
-
 		case BLE_SCAN_WAIT:
 			if (bleScanTick++ >= 30)
 			{
