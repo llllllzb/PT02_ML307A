@@ -223,7 +223,7 @@ void outputNode(void)
             }
             else if (currentnode->currentcmd == MWIFISCANSTART_CMD)
             {
-				tickRange = 75;
+				tickRange = 10;
             }
             else
             {
@@ -1342,25 +1342,45 @@ static void mwifiscaninfoParser(uint8_t *buf, uint16_t len)
     int index;
     uint8_t *rebuf, i;
     int16_t relen;
-    char restore[20];
+    char restore[50];
     uint8_t numb;
     WIFIINFO wifiList;
     
     rebuf = buf;
     relen = len;
     index = my_getstrindex((char *)rebuf, "+MWIFISCANINFO:", relen);
+    if (index < 0)
+    	return;
     wifiList.apcount = 0;
     while (index >= 0)
     {
         rebuf += index + 16;
         relen -= index + 16;
-		tmos_memcpy(restore, rebuf, 1);
-		restore[1] = 0;
+        index = getCharIndex(rebuf, relen, ',');
+        if (index < 0 || index > 2)
+        {
+			tmos_memcpy(restore, rebuf, 1);
+			restore[1] = 0;
+			numb = atoi(restore);
+			if (numb == 0 && wifiList.apcount == 0)
+			{
+				if (sysinfo.wifiExtendEvt & DEV_EXTEND_OF_MY)
+				{
+					LogPrintf(DEBUG_BLE, "Wifi error, try again");
+					wifiRequestSet(DEV_EXTEND_OF_MY);	
+				}
+			}
+        	break;
+        }
+		tmos_memcpy(restore, rebuf, index);
+		restore[index] = 0;
 		numb = atoi(restore);
 		index = getCharIndex(rebuf, relen, '"');
 		rebuf += index + 1;
 		relen -= index + 1;
 		index = getCharIndex(rebuf, relen, '"');
+		if (index < 0 || index > 13)
+			break;
         if (numb != 0 && wifiList.apcount < WIFIINFOMAX)
         {
             memcpy(restore, rebuf, index);
@@ -1373,9 +1393,9 @@ static void mwifiscaninfoParser(uint8_t *buf, uint16_t len)
         index = getCharIndex(rebuf, relen, '\r');
         rebuf += index;
         relen -= index;
-        
         index = my_getstrindex((char *)rebuf, "+MWIFISCANINFO:", relen);
     }
+
 	if (wifiList.apcount != 0)
     {
         if (sysinfo.wifiExtendEvt & DEV_EXTEND_OF_MY)

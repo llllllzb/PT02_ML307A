@@ -65,14 +65,12 @@ typedef struct
     uint8_t discState;		//该状态除了第一次上电，其余时间由蓝牙协议栈改写
     int8_t  socketId;
     uint8_t periodTick;
-    uint8_t socketReq;
 
     uint16_t connHandle;
     uint16_t startHandle;
     uint16_t endHandle;
     uint16_t charHandle;
     uint16_t notifyHandle;
-	uint8_t  timeoutcnt;
     uint32_t dataEvent;
     uint32_t updateTick;	//更新时间
     devSocketData_s sockData;

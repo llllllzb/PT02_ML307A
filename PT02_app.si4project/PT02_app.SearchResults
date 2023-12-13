@@ -1,2 +1,2 @@
----- setBle1InsId Matches (1 in 1 files) ----
-app_protocol.c (PT02_ML307A_app\Task) line 1335 : void setBle1InsId(void)
+---- ble terminate Matches (1 in 1 files) ----
+bleCentralDisconnect in app_central.c (PT02_ML307A_app\APP) :     LogPrintf(DEBUG_BLE, "ble terminate Handle[%X],ret=0x%02X", connHandle, status);

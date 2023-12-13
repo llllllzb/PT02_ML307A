@@ -793,12 +793,13 @@ int8_t bleDevConnDel(uint8_t *addr)
     {
         if (devInfoList[i].use && tmos_memcmp(addr, devInfoList[i].addr, 6) == TRUE)
         {
-            devInfoList[i].use = 0;
             LogPrintf(DEBUG_BLE, "bleDevConnDel==>(%d)ok", i);
             if (devInfoList[i].connHandle != INVALID_CONNHANDLE)
             {
                 bleCentralDisconnect(devInfoList[i].connHandle);
             }
+            devInfoList[i].use = 0;
+            tmos_memset(devInfoList[i].addr, 0, sizeof(devInfoList[i].addr));
             return i;
         }
     }
@@ -856,7 +857,6 @@ static void bleDevConnSuccess(uint8_t *addr, uint16_t connHandle)
                 devInfoList[i].findCharDone = 0;
                 devInfoList[i].notifyDone = 0;
                 devInfoList[i].periodTick = 0;
-                devInfoList[i].timeoutcnt = 0;
                 LogPrintf(DEBUG_BLE, "Get device conn handle [%d]", connHandle);
                 tmos_start_task(bleCentralTaskId, BLE_TASK_SVC_DISCOVERY_EVENT, MS1_TO_SYSTEM_TIME(100));
                 return;
@@ -1597,6 +1597,7 @@ static void bleScheduleTask(void)
     static uint8_t ind = 0;
     uint8_t ret;
     LogPrintf(DEBUG_BLE, "blestatus: conn:%d scan:%d", ble_conning, ble_scaning);
+    /* pt13一旦被扫描并加入连接列表,要3分钟没有协议通讯才会被断开 */
 	bleDisconnDetect();
     switch (bleSchedule.fsm)
     {
@@ -1633,13 +1634,6 @@ static void bleScheduleTask(void)
                 LogPrintf(DEBUG_BLE, "bleSchedule==>timeout!!!");
                 bleCentralDisconnect(devInfoList[ind].connHandle);
                 bleSchduleChangeFsm(BLE_SCHEDULE_DONE);
-                devInfoList[ind].timeoutcnt++;
-                if (devInfoList[ind].timeoutcnt >= 3)
-                {
-                	LogPrintf(DEBUG_BLE, "Dev(%d) connect fail 3 times, delete it", ind);
-					bleDevConnDel(devInfoList[ind].addr);
-					devInfoList[ind].timeoutcnt = 0;
-                }
                 if (sysinfo.logLevel == 4)
                 {
                     LogMessage(DEBUG_FACTORY, "+FMPC:BLE CONNECT FAIL");

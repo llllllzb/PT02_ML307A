@@ -24,7 +24,7 @@
 #define OTA_PARAM_FLAG			0x1F
 
 
-#define EEPROM_VERSION									"PT02_ML307A_V1.0.1"
+#define EEPROM_VERSION									"PT02_ML307A_V1.0.2"
 
 
 #define JT808_PROTOCOL_TYPE			8
